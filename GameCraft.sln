@@ -1,0 +1,45 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29728.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameCraft", "GameCraft\GameCraft.csproj", "{41A240B8-8C41-4DB8-B6A6-B1BABA3D56A6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Eterra Framework", "..\Eterra\Eterra\Eterra Framework.csproj", "{AE61C963-DFED-4E3C-88F8-8167BF39AD55}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Eterra Framework for Windows", "..\Eterra.Platforms\Eterra.Platforms.Windows\Eterra Framework for Windows.csproj", "{39D45BE7-E33D-4A74-A864-89F242CE035E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F8DE13D5-DE98-4F5A-B227-252926E123CC}"
+	ProjectSection(SolutionItems) = preProject
+		ABOUT-3RD-PARTY.txt = ABOUT-3RD-PARTY.txt
+		ABOUT.txt = ABOUT.txt
+		LICENSE.txt = LICENSE.txt
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{41A240B8-8C41-4DB8-B6A6-B1BABA3D56A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41A240B8-8C41-4DB8-B6A6-B1BABA3D56A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41A240B8-8C41-4DB8-B6A6-B1BABA3D56A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41A240B8-8C41-4DB8-B6A6-B1BABA3D56A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE61C963-DFED-4E3C-88F8-8167BF39AD55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE61C963-DFED-4E3C-88F8-8167BF39AD55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE61C963-DFED-4E3C-88F8-8167BF39AD55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE61C963-DFED-4E3C-88F8-8167BF39AD55}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39D45BE7-E33D-4A74-A864-89F242CE035E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39D45BE7-E33D-4A74-A864-89F242CE035E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39D45BE7-E33D-4A74-A864-89F242CE035E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39D45BE7-E33D-4A74-A864-89F242CE035E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E8E384C0-E0AB-477F-A932-166925CDCDA3}
+	EndGlobalSection
+EndGlobal
