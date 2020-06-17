@@ -1,5 +1,5 @@
 # GameCraft
-
+A toolkit for creating games in a voxel-based environment.
 ## About
 
 There's a ton of Minecraft clones out there - not surprising, considering that it's the best-selling videogame of all times. So what does make this one special? Well... it's not about mining. It's not even a game. _Until you make it one._
