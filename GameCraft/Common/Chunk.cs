@@ -17,12 +17,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Eterra;
-using Eterra.Graphics;
+using ShamanTK;
+using ShamanTK.Graphics;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 namespace GameCraft.Common
 {
@@ -282,6 +283,11 @@ namespace GameCraft.Common
         private Vector3I GetChunkOffsetFromDirection(Direction direction)
         {
             return Vector3I.FromDirection(direction) * SideLength + Offset;
+        }
+
+        public bool Encloses(Vector3 position)
+        {
+            return position >= Offset && position < Offset + Dimensions;
         }
 
         public bool TraverseToChunk(Direction direction, 

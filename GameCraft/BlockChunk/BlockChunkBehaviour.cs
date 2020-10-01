@@ -17,10 +17,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Eterra;
-using Eterra.Common;
-using Eterra.Graphics;
-using Eterra.IO;
+using ShamanTK;
+using ShamanTK.Common;
+using ShamanTK.Graphics;
+using ShamanTK.IO;
 using GameCraft.Common;
 using System;
 using System.Collections.Generic;
@@ -52,13 +52,13 @@ namespace GameCraft.BlockChunk
         private MeshBuffer mesh;
 
         public BlockChunkBehaviour(Chunk<BlockVoxel> chunk,
-            BlockChunkManager configuration)
+            BlockChunkManager manager)
         {
             this.chunk = chunk ??
                 throw new ArgumentNullException(nameof(chunk));
-            this.manager = configuration ??
+            this.manager = manager ??
                 throw new ArgumentNullException(nameof(chunk));
-            registry = configuration.BlockRegistry;
+            registry = manager.BlockRegistry;
         }
 
         private void ClearView(bool resetViewAvailable)

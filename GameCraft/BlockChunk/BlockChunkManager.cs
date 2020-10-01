@@ -17,12 +17,13 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Eterra.Graphics;
-using Eterra.IO;
+using ShamanTK.Graphics;
+using ShamanTK.IO;
 using GameCraft.Common;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace GameCraft.BlockChunk
 {
@@ -161,7 +162,7 @@ namespace GameCraft.BlockChunk
                 catch (Exception exc) { onFailure(exc); }
             };
 
-            commitDataAsync.BeginInvoke(null, null);
+            Task.Run(commitDataAsync);
         }
 
         public void BeginCheckoutData(Vector3I offset, 
@@ -199,7 +200,7 @@ namespace GameCraft.BlockChunk
                 catch (Exception exc) { onFailure(exc); }
             };
 
-            checkoutDataAsync.BeginInvoke(null, null);
+            Task.Run(checkoutDataAsync);
         }
 
         /// <summary>

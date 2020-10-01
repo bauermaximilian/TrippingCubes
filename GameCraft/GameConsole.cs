@@ -17,9 +17,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Eterra.Common;
-using Eterra.Controls;
-using Eterra.Graphics;
+using ShamanTK.Common;
+using ShamanTK.Controls;
+using ShamanTK.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Numerics;

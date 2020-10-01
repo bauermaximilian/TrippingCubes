@@ -17,8 +17,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Eterra.Common;
-using Eterra.IO;
+using ShamanTK.Common;
+using ShamanTK.IO;
 using GameCraft.Common;
 using System;
 using System.Collections.Generic;
@@ -106,8 +106,8 @@ namespace GameCraft.BlockChunk
             }
 
             if (vertices.Count == 0) vertices.Add(new Vertex(0, 0, 0));
-            if (faces.Count == 0) faces.Add(new Face((uint)vertices.Count,
-                (uint)vertices.Count, (uint)vertices.Count));
+            if (faces.Count == 0) faces.Add(new Face((uint)vertices.Count - 1,
+                (uint)vertices.Count - 1, (uint)vertices.Count - 1));
 
             return MeshData.Create(vertices.ToArray(), faces.ToArray());
         }

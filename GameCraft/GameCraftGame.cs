@@ -17,12 +17,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Eterra;
-using Eterra.Common;
-using Eterra.Controls;
-using Eterra.Graphics;
-using Eterra.IO;
-using Eterra.Platforms.Windows;
+using ShamanTK;
+using ShamanTK.Common;
+using ShamanTK.Controls;
+using ShamanTK.Graphics;
+using ShamanTK.IO;
 using GameCraft.BlockChunk;
 using GameCraft.Common;
 using System;
@@ -31,7 +30,7 @@ using System.Threading;
 
 namespace GameCraft
 {
-    public class GameCraftGame : EterraApplicationBase
+    public class GameCraftGame : ShamanApplicationBase
     {
         private readonly float availabilityDistanceChangeTreshold = 16;
         private readonly float distanceForAvailabilityDataOnly = 48;
@@ -71,7 +70,7 @@ namespace GameCraft
             Log.MessageLogged += (s, e) =>
                 Console.WriteLine(e.ToString(Console.BufferWidth - 2));
             GameCraftGame game = new GameCraftGame();
-            game.Run(new PlatformProvider());
+            game.Run(new ShamanTK.Platforms.DesktopGL.PlatformProvider());
 
             if (Log.HighestLogMessageLevel >= Log.MessageLevel.Warning)
                 Console.ReadKey(true);
@@ -89,7 +88,7 @@ namespace GameCraft
             guiParameters.Camera.ProjectionMode = 
                 ProjectionMode.OrthgraphicRelativeProportional;
 
-            cameraController = new FlyCamController
+            cameraController = new FlyCamController(gameParameters.Camera)
             {
                 MoveForward = Controls.Map(KeyboardKey.W),
                 MoveLeft = Controls.Map(KeyboardKey.A),
@@ -310,7 +309,7 @@ namespace GameCraft
                    chunk.SideLength / 2.0f);
 
                 float distanceFromCamera = 
-                    (cameraController.Position - chunkCenter).Length();
+                    (gameParameters.Camera.Position - chunkCenter).Length();
 
                 if (distanceFromCamera < distanceForAvailabilityDataOnly)
                     chunk.ChangeAvailability(ChunkAvailability.Full);
@@ -354,15 +353,15 @@ namespace GameCraft
             Controls.Input.SetMouse(MouseMode.InvisibleFixed);
             cameraController.Update(
                 TimeSpan.FromSeconds(1.0 / TargetUpdatesPerSecond));
-            cameraController.ApplyTo(gameParameters.Camera);
         }
 
         private Vector3I GetCurrentlySelectedVoxel()
         {
             return Vector3I.FromVector3(
-                cameraController.Position - new Vector3(0.5f, 0.5f, 0.5f) +
-                FlyCamController.CreateLookAt(new Vector3(0, 0, 3.0f),
-                cameraController.RotationX, cameraController.RotationY));
+                gameParameters.Camera.Position - 
+                new Vector3(0.5f, 0.5f, 0.5f) +
+                gameParameters.Camera.AlignVector(new Vector3(0, 0, 3.0f),
+                false, false));
         }
 
         private static void GetAreaFromPoints(Vector3I a, Vector3I b,

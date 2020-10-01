@@ -17,10 +17,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Eterra;
-using Eterra.Common;
-using Eterra.IO;
-using Eterra.Platforms.Windows.IO;
+using ShamanTK;
+using ShamanTK.Common;
+using ShamanTK.IO;
 using GameCraft.Common;
 using System;
 using System.Collections.Generic;
@@ -28,7 +27,8 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Xml;
-using Rectangle = Eterra.Common.Rectangle;
+using Rectangle = ShamanTK.Common.Rectangle;
+using ShamanTK.Platforms.Common.IO;
 
 namespace GameCraft.BlockChunk
 {
@@ -852,7 +852,7 @@ namespace GameCraft.BlockChunk
 
             //Convert the generated bitmap into a TextureData instance and 
             //put it into the associated "out" parameter.
-            texture = new BitmapTextureData(textureBitmap, true);
+            texture = new BitmapTextureData(textureBitmap);
 
             //Create a dictionary with the block key as key and the clippings
             //of the block sides textures. If a texture file couldn't be loaded

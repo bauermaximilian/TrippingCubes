@@ -206,6 +206,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\ShamanTK\ShamanTK\ShamanTK.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="data\VT323-Regular.ttf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

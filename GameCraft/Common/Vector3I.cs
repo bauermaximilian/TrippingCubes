@@ -150,6 +150,12 @@ namespace GameCraft.Common
                 left.Z + right.Z);
         }
 
+        public static Vector3 operator +(in Vector3I left, in Vector3 right)
+        {
+            return new Vector3(left.X + right.X, left.Y + right.Y,
+                left.Z + right.Z);
+        }
+
         public static Vector3I operator -(in Vector3I vector)
         {
             return new Vector3I(-vector.X, -vector.Y, -vector.Z);
@@ -188,6 +194,46 @@ namespace GameCraft.Common
         public static Vector3I operator %(in Vector3I left, int mod)
         {
             return new Vector3I(left.X % mod, left.Y % mod, left.Z % mod);
+        }
+
+        public static bool operator <(in Vector3I left, in Vector3 right)
+        {
+            return left.X < right.X && left.Y < right.Y && left.Z < right.Z;
+        }
+
+        public static bool operator >(in Vector3I left, in Vector3 right)
+        {
+            return left.X > right.X && left.Y > right.Y && left.Z > right.Z;
+        }
+
+        public static bool operator <=(in Vector3I left, in Vector3 right)
+        {
+            return left.X <= right.X && left.Y <= right.Y && left.Z <= right.Z;
+        }
+
+        public static bool operator >=(in Vector3I left, in Vector3 right)
+        {
+            return left.X >= right.X && left.Y >= right.Y && left.Z >= right.Z;
+        }
+
+        public static bool operator <(in Vector3 left, in Vector3I right)
+        {
+            return left.X < right.X && left.Y < right.Y && left.Z < right.Z;
+        }
+
+        public static bool operator >(in Vector3 left, in Vector3I right)
+        {
+            return left.X > right.X && left.Y > right.Y && left.Z > right.Z;
+        }
+
+        public static bool operator <=(in Vector3 left, in Vector3I right)
+        {
+            return left.X <= right.X && left.Y <= right.Y && left.Z <= right.Z;
+        }
+
+        public static bool operator >=(in Vector3 left, in Vector3I right)
+        {
+            return left.X >= right.X && left.Y >= right.Y && left.Z >= right.Z;
         }
 
         public static bool operator <(in Vector3I left, in Vector3I right)

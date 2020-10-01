@@ -17,8 +17,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using Eterra.Common;
-using Eterra.Controls;
+using ShamanTK.Common;
+using ShamanTK.Controls;
 using System;
 using System.Numerics;
 
@@ -26,10 +26,6 @@ namespace GameCraft
 {
     public class FlyCamController
     {
-        private const float DegXLimitAbs = 180.0f;
-
-        private const float DegYLimit = 360.0f;
-
         public ControlMapping MoveUp { get; set; }
 
         public ControlMapping MoveDown { get; set; }
@@ -50,15 +46,8 @@ namespace GameCraft
 
         public ControlMapping LookRight { get; set; }
 
-        private Vector3 position, positionAccerlation;
-
-        private Vector2 rotationDeg, rotationAccerlationDeg;
-
-        public Vector3 Position => position;
-
-        public Angle RotationX => Angle.Deg(rotationDeg.X);
-
-        public Angle RotationY => Angle.Deg(rotationDeg.Y);
+        private Vector3 positionAccerlation;
+        private Vector2 rotationAccerlationDeg;
 
         /// <summary>
         /// Per second.
@@ -80,13 +69,18 @@ namespace GameCraft
         /// </summary>
         public float MoveFriction = 3.0f;
 
-        public FlyCamController()
+        public ShamanTK.Graphics.Camera Camera { get; }
+
+        public FlyCamController(ShamanTK.Graphics.Camera camera)
         {
-            position = new Vector3(0, 0, -3);
+            Camera = camera ?? throw new ArgumentNullException(nameof(camera));
         }
 
         public void Update(TimeSpan delta)
         {
+            positionAccerlation -= positionAccerlation *
+                (float)(MoveFriction * delta.TotalSeconds);
+
             Vector2 inputRotationAccerlation = new Vector2(
                 (LookDown != null ? LookDown.Value : 0) -
                 (LookUp != null ? LookUp.Value : 0),
@@ -95,13 +89,9 @@ namespace GameCraft
             rotationAccerlationDeg -= rotationAccerlationDeg *
                 (float)(LookFriction * delta.TotalSeconds);
             rotationAccerlationDeg += inputRotationAccerlation *
-                (float)(LookSpeed * delta.TotalSeconds);            
+                (float)(LookSpeed * delta.TotalSeconds);
 
-            rotationDeg = new Vector2(
-                (rotationDeg.X + rotationAccerlationDeg.X) % DegYLimit,
-                (rotationDeg.Y + rotationAccerlationDeg.Y) % DegYLimit);
-
-            Vector3 inputAxisPositionAccerlation = 
+            Vector3 inputAxisPositionAccerlation =
                 new Vector3((MoveRight != null ? MoveRight.Value : 0) -
                 (MoveLeft != null ? MoveLeft.Value : 0),
                 (MoveUp != null ? MoveUp.Value : 0) -
@@ -111,46 +101,16 @@ namespace GameCraft
             if (inputAxisPositionAccerlation.Length() > 1)
                 inputAxisPositionAccerlation = Vector3.Normalize(
                     inputAxisPositionAccerlation);
-
-            Vector3 inputPositionAccerlation = CreateLookAt(
-                inputAxisPositionAccerlation, 0, //Angle.Deg(rotationDeg.X), 
-                Angle.Deg(rotationDeg.Y));
-
-            positionAccerlation -= positionAccerlation *
-                (float)(MoveFriction * delta.TotalSeconds);
-            positionAccerlation += inputPositionAccerlation *
+            inputAxisPositionAccerlation *=
                 (float)(MoveSpeed * delta.TotalSeconds);
-            
-            position += positionAccerlation;
-        }
 
-        public static Vector3 CreateLookAt(in Vector3 unitAxisVector,
-            Angle rotationX, Angle rotationY)
-        {
-            Vector2 rotationSin = new Vector2((float)Math.Sin(rotationX),
-                (float)Math.Sin(rotationY));
-            Vector2 rotationCos = new Vector2((float)Math.Cos(rotationX),
-                (float)Math.Cos(rotationY));
+            Camera.Rotate(Angle.Deg(rotationAccerlationDeg.X),
+                Angle.Deg(rotationAccerlationDeg.Y));
 
-            return new Vector3(unitAxisVector.X * rotationCos.Y +
-                unitAxisVector.Z * rotationSin.Y * rotationCos.X,
-                unitAxisVector.Y * (rotationCos.X >= 0 ? 1 : -1) - 
-                unitAxisVector.Z * rotationSin.X,
-                unitAxisVector.Z * rotationCos.Y * rotationCos.X - 
-                unitAxisVector.X * rotationSin.Y);
-        }
+            positionAccerlation += Camera.AlignVector(
+                inputAxisPositionAccerlation, true, false);
 
-        public void ApplyTo(Eterra.Graphics.Camera camera)
-        {
-            camera.RotateTo(
-                Angle.Deg(rotationDeg.X), Angle.Deg(rotationDeg.Y), 0);
-            camera.MoveTo(position);
-        }
-
-        public override string ToString()
-        {
-            return Position + " [Rotation X = " + RotationX.Degrees + "°, " +
-                "Rotation Y = " + RotationY.Degrees + "°]";
+            Camera.Move(positionAccerlation);
         }
     }
 }
