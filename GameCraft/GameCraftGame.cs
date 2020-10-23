@@ -46,7 +46,8 @@ namespace GameCraft
         private MeshBuffer cursor;
         private MeshBuffer plane;
         private MeshBuffer skyboxMesh;
-        private TextureBuffer skyboxTexture;
+        private TextureBuffer skyboxTextureInner;
+        private TextureBuffer skyboxTextureOuter;
         private SpriteFont font;
         private RenderTextureBuffer gameRenderTarget = null;
 
@@ -114,7 +115,7 @@ namespace GameCraft
 
             DateTime startTime = DateTime.Now;
             BlockRegistryBuilder blockRegistryBuilder =
-                BlockRegistryBuilder.FromXml("/blockRegistry.xml",
+                BlockRegistryBuilder.FromXml("/synthwave/registry.xml",
                 Resources.FileSystem, false);
             blockRegistry = blockRegistryBuilder.GenerateRegistry(
                 Resources.FileSystem);
@@ -131,8 +132,10 @@ namespace GameCraft
             Resources.LoadMesh(MeshData.Plane).AddFinalizer(r => plane = r);
             Resources.LoadMesh(MeshData.Skybox).AddFinalizer(
                 r => skyboxMesh = r);
-            Resources.LoadTexture("/textures/skybox.png").AddFinalizer(
-                r => skyboxTexture = r);
+            Resources.LoadTexture("/synthwave/skybox-inner.png", TextureFilter.Linear).AddFinalizer(
+                r => skyboxTextureInner = r);
+            Resources.LoadTexture("/synthwave/skybox-outer.png", TextureFilter.Linear).AddFinalizer(
+                r => skyboxTextureOuter = r);
             Resources.LoadGenericFont(new FileSystemPath("/VT323-Regular.ttf"),
                 fontRasterizationParameters, TextureFilter.Nearest)
                 .AddFinalizer(r => font = r);
@@ -222,10 +225,23 @@ namespace GameCraft
         private void RenderGame(IRenderContext context)
         {
             context.Mesh = skyboxMesh;
-            context.Texture = skyboxTexture;
-            context.Transformation = Matrix4x4.CreateScale(
-                gameParameters.Camera.ClippingRange.Y - 100);
+
+            context.Texture = skyboxTextureOuter;
+            context.Transformation = MathHelper.CreateTransformation(
+                gameParameters.Camera.Position,
+                new Vector3(gameParameters.Camera.ClippingRange.Y - 100),
+                Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
             context.Draw();
+
+            context.Texture = skyboxTextureInner;
+            context.Transformation = MathHelper.CreateTransformation(
+                gameParameters.Camera.Position, new Vector3((
+                gameParameters.Camera.ClippingRange.Y - 100) * 0.65f),
+                Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
+            context.Opacity = MathHelper.GetTimeSine(0.5, 0.05) + 0.95f;
+            context.Draw();
+
+            context.Opacity = 1;
 
             context.Fog = new Fog(20, 10, Color.TransparentWhite, false);
 

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<blockRegistry>
+  <settings>
+    <textureClippingSizePx>128</textureClippingSizePx>
+    <vertexPropertyDataFormat>ColorLight</vertexPropertyDataFormat>
+  </settings>
+  <meshes>
+    <mesh identifier="block">
+      <east>
+        <vertices format="x y z tx ty">
+          1 0 0 0 0  1 1 0 0 1  1 1 1 1 1  1 0 1 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </east>
+      <west>
+        <vertices format="x y z tx ty">
+          0 0 1 0 0  0 1 1 0 1  0 1 0 1 1  0 0 0 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </west>
+      <above>
+        <vertices format="x y z tx ty">
+          0 1 0 0 0  0 1 1 0 1  1 1 1 1 1  1 1 0 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </above>
+      <below>
+        <vertices format="x y z tx ty">
+          0 0 1 0 0  0 0 0 0 1  1 0 0 1 1  1 0 1 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </below>
+      <north>
+        <vertices format="x y z tx ty">
+          1 0 1 0 0  1 1 1 0 1  0 1 1 1 1  0 0 1 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </north>
+      <south>
+        <vertices format="x y z tx ty">
+          0 0 0 0 0  0 1 0 0 1  1 1 0 1 1  1 0 0 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </south>
+    </mesh>
+    <mesh identifier="liquid">
+      <east>
+        <vertices format="x y z tx ty">
+          1 0 0 0 0  1 0.8 0 0 1  1 0.8 1 1 1  1 0 1 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </east>
+      <west>
+        <vertices format="x y z tx ty">
+          0 0 1 0 0  0 0.8 1 0 1  0 0.8 0 1 1  0 0 0 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </west>
+      <above>
+        <vertices format="x y z tx ty">
+          0 0.8 0 0 0  0 0.8 1 0 1  1 0.8 1 1 1  1 0.8 0 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </above>
+      <below>
+        <vertices format="x y z tx ty">
+          0 0 1 0 0  0 0 0 0 1  1 0 0 1 1  1 0 1 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </below>
+      <north>
+        <vertices format="x y z tx ty">
+          1 0 1 0 0  1 0.8 1 0 1  0 0.8 1 1 1  0 0 1 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </north>
+      <south>
+        <vertices format="x y z tx ty">
+          0 0 0 0 0  0 0.8 0 0 1  1 0.8 0 1 1  1 0 0 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3
+        </faces>
+      </south>
+    </mesh>
+    <mesh identifier="plant">
+      <base>
+        <vertices format="x y z tx ty">
+          0 0 0 0 0  0 1 0 0 1  1 1 1 1 1  1 0 1 1 0
+          0 0 1 0 0  0 1 1 0 1  1 1 0 1 1  1 0 0 1 0
+        </vertices>
+        <faces>
+          0 1 2  0 2 3  2 1 0  3 2 0  4 5 6  4 6 7  6 5 4  7 6 4
+        </faces>
+      </base>
+    </mesh>
+  </meshes>
+  <blocks>
+    <block key="0" identifier="air">
+      <properties>
+        <isTranslucent>true</isTranslucent>
+      </properties>
+    </block>
+    <block key="1" identifier="cube.lines">
+      <mesh reference="block"/>
+      <texture>
+        <base>cube_lines.png</base>
+      </texture>
+    </block>
+    <block key="2" identifier="cube.solid">
+      <mesh reference="block"/>
+      <texture>
+        <base>cube_solid.png</base>
+      </texture>
+    </block>
+  </blocks>
+</blockRegistry>
