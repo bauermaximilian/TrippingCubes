@@ -27,12 +27,18 @@ namespace GameCraft
 {
     class FlyCamController : PlayerControllerBase
     {
+        public const float LookAccerlationDeg = 42.0f;
+        public const float LookDragDeg = 6.9f;
+
+        public const float MoveSpeed = 0.69f;
+        public const float MoveDrag = 4.20f;
+
         public ControlMapping MoveUp { get; set; }
 
         public ControlMapping MoveDown { get; set; }        
 
-        private Vector3 positionAccerlation;
-        private Vector2 rotationDegrees;
+        public Vector3 velocity;
+        private Vector2 rotationDeg;
 
         protected override Vector3 MovementUserInput => base.MovementUserInput
             + new Vector3(0, (MoveUp?.Value ?? 0) - (MoveDown?.Value ?? 0), 0);
@@ -43,14 +49,24 @@ namespace GameCraft
 
         public override void Update(TimeSpan delta)
         {
-            UpdateRotation(delta, ref rotationDegrees);
+            PhysicsHelper.ApplyAccerlationToVelocity(ref rotationDeg,
+                RotationUserInput * LookAccerlationDeg, delta);
+            PhysicsHelper.ApplyDragToVelocity(ref rotationDeg,
+                LookDragDeg, delta);
 
-            Camera.Rotate(Angle.Deg(rotationDegrees.X),
-                Angle.Deg(rotationDegrees.Y));
+            Camera.Rotate(Angle.Deg(rotationDeg.X), Angle.Deg(rotationDeg.Y));
 
-            UpdateMovement(delta, ref positionAccerlation, true);
+            Vector3 userInput = Camera.AlignVector(MovementUserInput,
+                true, false);
 
-            Camera.Move(positionAccerlation);
+            if (userInput.Length() > 1)
+                userInput = Vector3.Normalize(userInput);
+
+            PhysicsHelper.ApplyAccerlationToVelocity(ref velocity,
+                userInput * MoveSpeed, delta);
+            PhysicsHelper.ApplyDragToVelocity(ref velocity, MoveDrag, delta);
+
+            Camera.Move(velocity);
         }
     }
 }

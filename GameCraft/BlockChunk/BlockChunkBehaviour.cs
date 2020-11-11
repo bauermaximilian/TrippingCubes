@@ -106,8 +106,7 @@ namespace GameCraft.BlockChunk
                     for (int z = 0; z < chunk.SideLength; z++)
                     {
                         Vector3I position = new Vector3I(x, y, z);
-                        if (chunk.TryGetVoxel(position, false,
-                            out BlockVoxel voxel))
+                        if (chunk.TryGetVoxel(position, out BlockVoxel voxel))
                         {
                             Block block = registry.GetBlock(voxel.BlockKey);
                             if (block.Properties.Luminance > 0)

@@ -301,10 +301,12 @@ namespace GameCraft.Common
             return false;
         }
 
-        public static Vector3I FromVector3(Vector3 vector)
+        public static Vector3I FromVector3(Vector3 vector, bool round)
         {
-            return new Vector3I((int)Math.Round(vector.X),
-                (int)Math.Round(vector.Y), (int)Math.Round(vector.Z));
+            if (round)
+                return new Vector3I((int)Math.Round(vector.X),
+                    (int)Math.Round(vector.Y), (int)Math.Round(vector.Z));
+            else return (Vector3I)vector;
         }
          
         public static implicit operator Vector3(Vector3I vector)

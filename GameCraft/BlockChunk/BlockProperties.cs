@@ -17,6 +17,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+using OpenTK.Mathematics;
+using ShamanTK.Common;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +43,10 @@ namespace GameCraft.BlockChunk
         private int luminance = 0;
 
         public bool IsTranslucent { get; private set; }
+
+        public ColliderPrimitive Collider { get; private set; }
+
+        public Vector3 ColliderOffset { get; private set; }
 
         public BlockProperties(bool isTranslucent, int luminance)
         {

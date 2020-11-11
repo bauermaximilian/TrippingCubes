@@ -269,15 +269,16 @@ namespace GameCraft.Common
                 "or is disposed already.");
         }
 
-        private Vector3I GetChunkOffsetFromPosition(in Vector3I position)
+        public static Vector3I GetChunkOffsetFromPosition(in Vector3I position, 
+            int chunkSideLength)
         {
             return new Vector3I(
-                (int)Math.Ceiling((position.X - SideLength + 1) / 
-                    (float)SideLength) * SideLength,
-                (int)Math.Ceiling((position.Y - SideLength + 1) /
-                    (float)SideLength) * SideLength,
-                (int)Math.Ceiling((position.Z - SideLength + 1) /
-                    (float)SideLength) * SideLength);
+                (int)Math.Ceiling((position.X - chunkSideLength + 1) / 
+                    (float)chunkSideLength) * chunkSideLength,
+                (int)Math.Ceiling((position.Y - chunkSideLength + 1) /
+                    (float)chunkSideLength) * chunkSideLength,
+                (int)Math.Ceiling((position.Z - chunkSideLength + 1) /
+                    (float)chunkSideLength) * chunkSideLength);
         }
 
         private Vector3I GetChunkOffsetFromDirection(Direction direction)
@@ -311,7 +312,8 @@ namespace GameCraft.Common
         public bool TraverseToChunk(Vector3I position, 
             bool createNonExistantChunk, out Chunk<VoxelT> chunk)
         {
-            Vector3I chunkOffset = GetChunkOffsetFromPosition(position);
+            Vector3I chunkOffset = 
+                GetChunkOffsetFromPosition(position, SideLength);
 
             if (chunkRegistry.TryGetValue(chunkOffset, out chunk))
                 return true;
@@ -342,7 +344,8 @@ namespace GameCraft.Common
 
         public bool RemoveChunk(Vector3I position)
         {
-            Vector3I chunkOffset = GetChunkOffsetFromPosition(position);
+            Vector3I chunkOffset =
+                GetChunkOffsetFromPosition(position, SideLength);
 
             if (chunkRegistry.TryGetValue(chunkOffset, out var chunk))
             {
@@ -353,8 +356,15 @@ namespace GameCraft.Common
             else return false;
         }
 
-        public bool TryGetVoxel(in Vector3I position, 
-            bool includeAdjacentChunks, out VoxelT voxel)
+        public bool TryGetVoxel(in Vector3 position, out VoxelT voxel,
+            bool includeAdjacentChunks = false)
+        {
+            return TryGetVoxel((Vector3I)position, out voxel, 
+                includeAdjacentChunks);
+        }
+
+        public bool TryGetVoxel(in Vector3I position, out VoxelT voxel, 
+            bool includeAdjacentChunks = false)
         {
             bool xInsideChunk = position.X >= 0 && position.X < SideLength;
             bool yInsideChunk = position.Y >= 0 && position.Y < SideLength;
@@ -418,17 +428,17 @@ namespace GameCraft.Common
             bool found = true;
 
             found &= TryGetVoxel(position + Vector3I.West, 
-                includeAdjacentChunks, out VoxelT west);
+                out VoxelT west, includeAdjacentChunks);
             found &= TryGetVoxel(position + Vector3I.East,
-                includeAdjacentChunks, out VoxelT east);
+                out VoxelT east, includeAdjacentChunks);
             found &= TryGetVoxel(position + Vector3I.Above,
-                includeAdjacentChunks, out VoxelT above);
+                out VoxelT above, includeAdjacentChunks);
             found &= TryGetVoxel(position + Vector3I.Below,
-                includeAdjacentChunks, out VoxelT below);
+                out VoxelT below, includeAdjacentChunks);
             found &= TryGetVoxel(position + Vector3I.North,
-                includeAdjacentChunks, out VoxelT north);
+                out VoxelT north, includeAdjacentChunks);
             found &= TryGetVoxel(position + Vector3I.South,
-                includeAdjacentChunks, out VoxelT south);
+                out VoxelT south, includeAdjacentChunks);
 
             adjacentVoxelCollection.West = west;
             adjacentVoxelCollection.East = east;

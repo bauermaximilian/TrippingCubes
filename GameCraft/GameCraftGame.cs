@@ -27,6 +27,7 @@ using GameCraft.Common;
 using System;
 using System.Numerics;
 using System.Threading;
+using GameCraft.Physics;
 
 namespace GameCraft
 {
@@ -54,8 +55,13 @@ namespace GameCraft
         private ControlMapping exit;
         private ControlMapping fullscreenToggle;
         private ControlMapping addBlock, removeBlock;
+        private ControlMapping switchInputScheme;
 
-        private FlyCamController cameraController;
+        private FlyCamController flyCamController;
+        private FirstPersonController firstPersonController;
+
+        private bool useFlyCamController = true;
+
         private GameConsole gameConsole;
         private BlockRegistry blockRegistry;                
 
@@ -67,6 +73,11 @@ namespace GameCraft
 
         public static void Main(string[] args)
         {
+            WorldTest test = new WorldTest();
+            test.TestMoveOnXAxis(false);
+            test.ResetPosition();
+            test.TestMoveOnXAxis(true);
+
             Log.UseEnglishExceptionMessages = true;
             Log.MessageLogged += (s, e) =>
                 Console.WriteLine(e.ToString(Console.BufferWidth - 2));
@@ -81,33 +92,13 @@ namespace GameCraft
         {
             fullscreenToggle = Controls.Map(KeyboardKey.F11);
 
-            gameParameters.BackfaceCullingEnabled = true;
+            gameParameters.BackfaceCullingEnabled = false;
             //guiParameters.BackfaceCullingEnabled = true;
 
             Graphics.Size = new Size(800, 600);
 
             guiParameters.Camera.ProjectionMode = 
                 ProjectionMode.OrthgraphicRelativeProportional;
-
-            cameraController = new FlyCamController(gameParameters.Camera)
-            {
-                MoveForward = Controls.Map(KeyboardKey.W),
-                MoveLeft = Controls.Map(KeyboardKey.A),
-                MoveBackward = Controls.Map(KeyboardKey.S),
-                MoveRight = Controls.Map(KeyboardKey.D),
-                MoveUp = Controls.MapCustom(c => c.IsPressed(KeyboardKey.E) 
-                    || c.IsPressed(KeyboardKey.Space)),
-                MoveDown = Controls.MapCustom(c => c.IsPressed(KeyboardKey.Q)
-                    || c.IsPressed(KeyboardKey.Shift)),
-                LookUp = Controls.Map(MouseSpeedAxis.Up),
-                LookRight = Controls.Map(MouseSpeedAxis.Right),
-                LookDown = Controls.Map(MouseSpeedAxis.Down),
-                LookLeft = Controls.Map(MouseSpeedAxis.Left)
-            };
-            exit = Controls.Map(KeyboardKey.Escape);
-
-            addBlock = Controls.Map(MouseButton.Left);
-            removeBlock = Controls.Map(MouseButton.Right);
 
             Graphics.Title = "GameCraft - Development Preview";
 
@@ -132,9 +123,11 @@ namespace GameCraft
             Resources.LoadMesh(MeshData.Plane).AddFinalizer(r => plane = r);
             Resources.LoadMesh(MeshData.Skybox).AddFinalizer(
                 r => skyboxMesh = r);
-            Resources.LoadTexture("/synthwave/skybox-inner.png", TextureFilter.Linear).AddFinalizer(
+            Resources.LoadTexture("/synthwave/skybox-inner.png", 
+                TextureFilter.Linear).AddFinalizer(
                 r => skyboxTextureInner = r);
-            Resources.LoadTexture("/synthwave/skybox-outer.png", TextureFilter.Linear).AddFinalizer(
+            Resources.LoadTexture("/synthwave/skybox-outer.png", 
+                TextureFilter.Linear).AddFinalizer(
                 r => skyboxTextureOuter = r);
             Resources.LoadGenericFont(new FileSystemPath("/VT323-Regular.ttf"),
                 fontRasterizationParameters, TextureFilter.Nearest)
@@ -146,6 +139,44 @@ namespace GameCraft
 
             rootChunk = new Chunk<BlockVoxel>(
                 new BlockChunkManager("/world/", blockRegistry, Resources));
+
+            flyCamController = new FlyCamController(gameParameters.Camera)
+            {
+                MoveForward = Controls.Map(KeyboardKey.W),
+                MoveLeft = Controls.Map(KeyboardKey.A),
+                MoveBackward = Controls.Map(KeyboardKey.S),
+                MoveRight = Controls.Map(KeyboardKey.D),
+                MoveUp = Controls.MapCustom(c => c.IsPressed(KeyboardKey.E)
+                    || c.IsPressed(KeyboardKey.Space)),
+                MoveDown = Controls.MapCustom(c => c.IsPressed(KeyboardKey.Q)
+                    || c.IsPressed(KeyboardKey.Shift)),
+                LookUp = Controls.Map(MouseSpeedAxis.Up),
+                LookRight = Controls.Map(MouseSpeedAxis.Right),
+                LookDown = Controls.Map(MouseSpeedAxis.Down),
+                LookLeft = Controls.Map(MouseSpeedAxis.Left)
+            };
+
+            firstPersonController = new FirstPersonController(
+                gameParameters.Camera, rootChunk, blockRegistry)
+            {
+                MoveForward = Controls.Map(KeyboardKey.W),
+                MoveLeft = Controls.Map(KeyboardKey.A),
+                MoveBackward = Controls.Map(KeyboardKey.S),
+                MoveRight = Controls.Map(KeyboardKey.D),
+                Jump = Controls.Map(KeyboardKey.Space),
+                LookUp = Controls.Map(MouseSpeedAxis.Up),
+                LookRight = Controls.Map(MouseSpeedAxis.Right),
+                LookDown = Controls.Map(MouseSpeedAxis.Down),
+                LookLeft = Controls.Map(MouseSpeedAxis.Left),
+                ToggleVerboseMode = Controls.Map(KeyboardKey.V)
+            };
+
+            exit = Controls.Map(KeyboardKey.Escape);
+
+            addBlock = Controls.Map(MouseButton.Left);
+            removeBlock = Controls.Map(MouseButton.Right);
+
+            switchInputScheme = Controls.Map(KeyboardKey.Tab);
         }
 
         private void LoadingTasksCompleted(object sender, EventArgs e)
@@ -238,7 +269,7 @@ namespace GameCraft
                 gameParameters.Camera.Position, new Vector3((
                 gameParameters.Camera.ClippingRange.Y - 100) * 0.65f),
                 Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
-            context.Opacity = MathHelper.GetTimeSine(0.5, 0.05) + 0.95f;
+            context.Opacity = MathHelper.CalculateTimeSine(0.5, 0.05) + 0.95f;
             context.Draw();
 
             context.Opacity = 1;
@@ -367,8 +398,12 @@ namespace GameCraft
             }
 
             Controls.Input.SetMouse(MouseMode.InvisibleFixed);
-            cameraController.Update(
-                TimeSpan.FromSeconds(1.0 / TargetUpdatesPerSecond));
+
+            if (switchInputScheme.IsActivated) 
+                useFlyCamController = !useFlyCamController;
+
+            if (useFlyCamController) flyCamController.Update(delta);
+            else firstPersonController.Update(delta);
         }
 
         private Vector3I GetCurrentlySelectedVoxel()
@@ -377,7 +412,7 @@ namespace GameCraft
                 gameParameters.Camera.Position - 
                 new Vector3(0.5f, 0.5f, 0.5f) +
                 gameParameters.Camera.AlignVector(new Vector3(0, 0, 3.0f),
-                false, false));
+                false, false), true);
         }
 
         private static void GetAreaFromPoints(Vector3I a, Vector3I b,

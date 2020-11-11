@@ -90,8 +90,7 @@ namespace GameCraft.BlockChunk
                     {
                         Vector3I position = new Vector3I(x, y, z);
 
-                        chunk.TryGetVoxel(position, false, 
-                            out BlockVoxel center);
+                        chunk.TryGetVoxel(position, out BlockVoxel center);
                         Block centerBlock = registry.GetBlock(center.BlockKey);
                         
                         chunk.TryGetAdjacentVoxels(position, true, 
