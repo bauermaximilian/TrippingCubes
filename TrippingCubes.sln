@@ -1,0 +1,47 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29728.190
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F8DE13D5-DE98-4F5A-B227-252926E123CC}"
+	ProjectSection(SolutionItems) = preProject
+		ABOUT.txt = ABOUT.txt
+		LICENSE.txt = LICENSE.txt
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TrippingCubes", "TrippingCubes\TrippingCubes.csproj", "{7395C50A-4B45-4ECA-924D-84E74059F6AB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ShamanTK", "..\ShamanTK\ShamanTK\ShamanTK.csproj", "{B2002882-24A4-4390-BA71-924E38519C87}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{66C1DB50-24E8-4904-8356-15A9CAC0FEC2}"
+	ProjectSection(SolutionItems) = preProject
+		tools\exportBlockMesh.py = tools\exportBlockMesh.py
+		tools\scriptingSample.js = tools\scriptingSample.js
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7395C50A-4B45-4ECA-924D-84E74059F6AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7395C50A-4B45-4ECA-924D-84E74059F6AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7395C50A-4B45-4ECA-924D-84E74059F6AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7395C50A-4B45-4ECA-924D-84E74059F6AB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2002882-24A4-4390-BA71-924E38519C87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2002882-24A4-4390-BA71-924E38519C87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2002882-24A4-4390-BA71-924E38519C87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2002882-24A4-4390-BA71-924E38519C87}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{66C1DB50-24E8-4904-8356-15A9CAC0FEC2} = {F8DE13D5-DE98-4F5A-B227-252926E123CC}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E8E384C0-E0AB-477F-A932-166925CDCDA3}
+	EndGlobalSection
+EndGlobal
