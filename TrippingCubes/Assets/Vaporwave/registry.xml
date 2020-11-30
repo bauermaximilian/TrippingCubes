@@ -123,16 +123,60 @@
         <isTranslucent>true</isTranslucent>
       </properties>
     </block>
-    <block key="1" identifier="cube.lines">
+    <block key="1" identifier="cubiclines.yellow">
       <mesh reference="block"/>
       <texture>
-        <base>cube_lines.png</base>
+        <base>cubic-lines_yellow_alt-1.png</base>
       </texture>
     </block>
-    <block key="2" identifier="cube.solid">
+	<block key="1:1" identifier="cubiclines.purple">
       <mesh reference="block"/>
       <texture>
-        <base>cube_solid.png</base>
+        <base>cubic-lines_purple.png</base>
+      </texture>
+    </block>
+	<block key="1:2" identifier="cubiclines.yellow.double">
+      <mesh reference="block"/>
+      <texture>
+        <base>cubic-lines_yellow_double.png</base>
+      </texture>
+    </block>
+	<block key="1:3" identifier="cubiclines.purple.double">
+      <mesh reference="block"/>
+      <texture>
+        <base>cubic-lines_purple_double.png</base>
+      </texture>
+    </block>
+    <block key="2" identifier="gradients.green.single">
+      <mesh reference="block"/>
+      <texture>
+        <base>gradients_green_wall.png</base>
+        <above>gradients_green_floor-lit.png</above>
+        <below>gradients_green_floor-lit.png</below>
+      </texture>
+    </block>
+	<block key="2:1" identifier="gradients.green.single.unlit">
+      <mesh reference="block"/>
+      <texture>
+        <base>gradients_green_wall.png</base>
+        <above>gradients_green_floor-unlit.png</above>
+        <below>gradients_green_floor-unlit.png</below>
+      </texture>
+    </block>
+	<block key="2:2" identifier="gradients.green.double-bottom">
+      <mesh reference="block"/>
+      <texture>
+        <base>gradients_green_wall-bottom.png</base>
+        <above>gradients_green_floor-lit.png</above>
+        <below>gradients_green_floor-lit.png</below>
+      </texture>
+    </block>
+	<block key="2:3" identifier="gradients.green.double-top">
+      <mesh reference="block"/>
+      <texture>
+        <base>gradients_green_wall-top.png</base>
+        <above>gradients_green_floor-unlit.png</above>
+        <below>gradients_green_floor-unlit.png</below>
       </texture>
     </block>
   </blocks>

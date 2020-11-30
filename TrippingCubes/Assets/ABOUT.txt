@@ -1,0 +1,13 @@
+﻿The files in the subdirectory "./Vaporwave" are (C) by Maximilian Bauer and 
+are licensed under a Creative Commons Attribution-ShareAlike 4.0 
+International License.
+
+You should have received a copy of the license along with this
+work. If not, see <http://creativecommons.org/licenses/by-sa/4.0/>.
+
+The font "VT323" is by Peter Hull. See "LICENSE_VT323-Regular.txt" for details.
+
+The files in the subdirectory "./VoxelPack" are from www.kenney.nl and were
+released into the public domain (https://opengameart.org/content/voxel-pack).
+Any modifications or additions to these files in that folder also fall under 
+the public domain.
