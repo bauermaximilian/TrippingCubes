@@ -17,40 +17,29 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-using ShamanTK.Common;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using GameCraft.BlockChunk;
+using GameCraft.Common;
 using ShamanTK.Controls;
 using ShamanTK.Graphics;
-using System;
-using System.Numerics;
 
 namespace GameCraft
 {
-    class FlyCamController : PlayerControllerBase
+    class FirstPersonController : PlayerControllerBase
     {
-        public ControlMapping MoveUp { get; set; }
+        public ControlMapping Jump { get; set; }
 
-        public ControlMapping MoveDown { get; set; }        
-
-        private Vector3 positionAccerlation;
-        private Vector2 rotationDegrees;
-
-        protected override Vector3 MovementUserInput => base.MovementUserInput
-            + new Vector3(0, (MoveUp?.Value ?? 0) - (MoveDown?.Value ?? 0), 0);
-
-        public FlyCamController(Camera camera) : base(camera)
+        public FirstPersonController(Camera camera, 
+            Chunk<BlockVoxel> rootChunk) : base(camera)
         {
+
         }
 
         public override void Update(TimeSpan delta)
         {
-            UpdateRotation(delta, ref rotationDegrees);
-
-            Camera.Rotate(Angle.Deg(rotationDegrees.X),
-                Angle.Deg(rotationDegrees.Y));
-
-            UpdateMovement(delta, ref positionAccerlation, true);
-
-            Camera.Move(positionAccerlation);
+            throw new NotImplementedException();
         }
     }
 }
