@@ -673,7 +673,7 @@ namespace TrippingCubes.World
 
         private void OnFailedAsyncDataCommit(Exception exc)
         {
-            Log.Error("Chunk [" + Offset + "] data paging failed.", exc);
+            Log.Error("Chunk [" + Offset + "] data commit failed.", exc);
             Lock();
             dataCommitRunning = false;
         }

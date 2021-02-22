@@ -75,7 +75,7 @@ namespace TrippingCubes.World
 
             if (blockRegistry.HasTexture)
                 Resources.LoadTexture(blockRegistry.Texture,
-                    TextureFilter.Nearest).AddFinalizer(r => BlockTexture = r);
+                    TextureFilter.Nearest).Subscribe(r => BlockTexture = r);
         }
 
         public IChunkBehaviour<BlockVoxel> CreateBehaviour(

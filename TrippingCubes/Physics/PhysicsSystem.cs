@@ -23,23 +23,38 @@ using System.Numerics;
 
 namespace TrippingCubes.Physics
 {
+    enum Axis
+    {
+        X = 0,
+        Y = 1,
+        Z = 2
+    }
+
     class PhysicsSystem
     {
+        internal const float Epsilon = 0.0001f;
+
         public Vector3 Gravity { get; set; } = new Vector3(0, -9.81f, 0);
 
         public bool HasGravity => Gravity.Length() > 0;
 
         public float MinBounceImpulse { get; set; } = 0.5f;
 
-        public float AirDrag { get; set; } = 0.1f;
+        public float AirDrag { get; set; } = 1.25f;
 
-        public float FluidDrag { get; set; } = 0.4f;
+        public float FluidDrag { get; set; } = 3f;
+
+        public float AngularDragFactor { get; set; } = 2f;
 
         public float FluidDensity { get; set; } = 2.0f;
+
+        public IEnumerable<RigidBody> Bodies => bodies;
 
         private readonly List<RigidBody> bodies = new List<RigidBody>();
 
         internal readonly Func<Vector3, bool> isSolid, isFluid;
+
+        private readonly Sweep sweep;
 
         public PhysicsSystem(Func<Vector3, bool> isSolid, Func<Vector3, bool> isFluid)
         {
@@ -47,6 +62,8 @@ namespace TrippingCubes.Physics
                 throw new ArgumentNullException(nameof(isSolid));
             this.isFluid = isFluid ??
                 throw new ArgumentNullException(nameof(isFluid));
+
+            sweep = new Sweep(isSolid);
         }
 
         public RigidBody AddNewBody(BoundingBox boundingBox)
@@ -64,6 +81,38 @@ namespace TrippingCubes.Physics
         public void Update(TimeSpan delta)
         {
             foreach (RigidBody body in bodies) body.Update(delta);
-        }        
+        }    
+        
+        public bool RaycastVolumetric(BoundingBox boundingBox,
+            Vector3 distance, out float collisionDistance, 
+            out Vector3 collisionNormal)
+        {
+            bool collided = false;
+            float collidedDistance = 0;
+            float collidedDir = 0;
+            int collidedAxisIndex = 0;
+
+            sweep.Execute(ref boundingBox, distance, (float distance, 
+                int axisIndex, float dir, ref Vector3 leftToGo) =>
+            {
+                collidedDistance = distance;
+                collidedAxisIndex = axisIndex;
+                collidedDir = dir;
+                collided = true;
+                return true;
+            }, true);
+
+            collisionDistance = collidedDistance;
+
+            collisionNormal = collidedAxisIndex switch
+            {
+                0 => Vector3.UnitX,
+                1 => Vector3.UnitY,
+                2 => Vector3.UnitZ,
+                _ => Vector3.Zero
+            } * (collidedDir > 0 ? 1 : -1);
+
+            return collided;
+        }
     }
 }

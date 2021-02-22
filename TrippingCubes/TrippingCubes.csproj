@@ -3,7 +3,17 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <StartupObject></StartupObject>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Common\CharacterModel.cs" />
+    <Compile Remove="Entities\AdvancedCharacter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Physics\RigidBody.cs~RF1fb71d2.TMP" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\ShamanTK\ShamanTK\ShamanTK.csproj" />
@@ -12,6 +22,15 @@
   <ItemGroup>
     <None Update="Assets\ABOUT.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Characters\sprite_test.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Characters\synthsword.glb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Characters\testcharacter.glb">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Assets\LICENSE.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -202,6 +221,15 @@
     <None Update="Assets\VT323-Regular.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\Characters\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Common\CharacterModel.cs" />
+    <None Include="Entities\AdvancedCharacter.cs" />
   </ItemGroup>
 
 </Project>

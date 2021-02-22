@@ -195,8 +195,7 @@ namespace TrippingCubes
             int safeCursorIndex = GetClampedCursorIndex();
 
             textBeforeCursor = inputText.Substring(0, safeCursorIndex);
-            textAfterCursor = inputText.Substring(safeCursorIndex,
-                inputText.Length - safeCursorIndex);
+            textAfterCursor = inputText[safeCursorIndex..];
         }
 
         private void RemoveCharacterAtCursor(bool removeAfter)
@@ -204,10 +203,10 @@ namespace TrippingCubes
             GetInputTextParts(out string textBefore, out string textAfter);
 
             if (removeAfter && textAfter.Length > 0)
-                textAfter = textAfter.Substring(1, textAfter.Length - 1);
+                textAfter = textAfter[1..];
             else if (!removeAfter && textBefore.Length > 0)
             {
-                textBefore = textBefore.Substring(0, textBefore.Length - 1);
+                textBefore = textBefore[0..^1];
                 cursorIndex = GetClampedCursorIndex(-1);
             }
             else return;

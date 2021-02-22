@@ -22,15 +22,11 @@ using System.Numerics;
 
 namespace TrippingCubes.Physics
 {
+    delegate bool SweepCallback(float distance, int axisIndex,
+        float dir, ref Vector3 leftToGo);
+
     class Sweep
     {
-        // This serves another purpose than float.Epsilon 
-        // and must not be the same value!
-        private const float calculationEpsilon = 0.000001f;
-
-        public delegate bool SweepCallback(float dist, int axisIndex,
-            float dir, ref Vector3 vec);
-
         private readonly Func<Vector3, bool> testBlock;
 
         private float cumulative_t;
@@ -59,11 +55,12 @@ namespace TrippingCubes.Physics
                 throw new ArgumentNullException(nameof(testBlock));
         }
 
-        // Return total distance moved (not necessarily magnitude of [end]-[start])
-        public float Execute(ref BoundingBox boundingBox, ref Vector3 direction,
-            SweepCallback callback, bool noTranslate)
+        // Return total distance moved 
+        // (not necessarily magnitude of [end]-[start])
+        public float Execute(ref BoundingBox boundingBox, 
+            Vector3 direction, SweepCallback callback, bool noTranslate)
         {
-            Vector3 maximum = boundingBox.Maximum;
+            Vector3 maximum = boundingBox.Maximum();
 
             direction.CopyTo(sdir);
             direction.CopyTo(vec);
@@ -101,8 +98,6 @@ namespace TrippingCubes.Physics
 
                 axis = StepForward();
             }
-
-            direction = new Vector3(vec[0], vec[1], vec[2]);
 
             if (!done)
             {
@@ -248,12 +243,12 @@ namespace TrippingCubes.Physics
 
         private float LeadEdgeToInt(float coord, float step)
         {
-            return (float)Math.Floor(coord - step * calculationEpsilon);
+            return (float)Math.Floor(coord - step * PhysicsSystem.Epsilon);
         }
 
         private float TrailEdgeToInt(float coord, float step)
         {
-            return (float)Math.Floor(coord + step * calculationEpsilon);
+            return (float)Math.Floor(coord + step * PhysicsSystem.Epsilon);
         }
     }
 }
