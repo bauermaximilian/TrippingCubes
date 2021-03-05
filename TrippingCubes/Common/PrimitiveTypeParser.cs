@@ -32,7 +32,7 @@ namespace TrippingCubes.Common
 
         public static void TryAssign(
             IEnumerable<KeyValuePair<string, string>> propertyAssignments,
-            object targetObject)
+            object targetObject, bool throwOnError)
         {
             Type targetObjectType = targetObject.GetType();
 
@@ -40,21 +40,45 @@ namespace TrippingCubes.Common
             {
                 PropertyInfo property = targetObjectType.GetProperty(
                     propertyAssignment.Key, 
-                    BindingFlags.Instance | BindingFlags.Public);
+                    BindingFlags.Instance | BindingFlags.Public | 
+                    BindingFlags.SetProperty);
 
                 if (property != null)
                 {
                     Type propertyType = property.PropertyType;
 
-                    if (TryParse(propertyAssignment.Value, propertyType, 
+                    if (TryParse(propertyAssignment.Value, propertyType,
                         out object value))
                     {
                         if (propertyType.IsAssignableFrom(value.GetType()))
                         {
                             try { property.SetValue(targetObject, value); }
-                            catch { continue; }
+                            catch (Exception exc)
+                            {
+                                if (throwOnError)
+                                {
+                                    throw new InvalidOperationException(
+                                        "The property " +
+                                        $"{propertyAssignment.Key} couldn't " +
+                                        "be assigned with the parsed value.",
+                                        exc);
+                                }
+                            }
                         }
                     }
+                    else if (throwOnError)
+                    {
+                        throw new InvalidOperationException("The parameter " +
+                            $"value of {propertyAssignment.Key} couldn't be " +
+                            "parsed into a value of the type " +
+                            $"{propertyType.Name} of the target property.");
+                    }
+                }
+                else if (throwOnError)
+                {
+                    throw new InvalidOperationException("The parameter " +
+                        $"{propertyAssignment.Key} couldn't be matched with " +
+                        "a public (writeable) property of the target object.");
                 }
             }
         }

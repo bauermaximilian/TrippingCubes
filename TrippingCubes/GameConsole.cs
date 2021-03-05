@@ -254,7 +254,7 @@ namespace TrippingCubes
 
         public void Update(TimeSpan delta)
         {
-            ThrowIfDisposed();
+            if (IsDisposed) return;
 
             if (HasFocus)
             {

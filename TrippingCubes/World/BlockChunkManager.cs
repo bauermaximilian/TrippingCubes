@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using ShamanTK;
 
 namespace TrippingCubes.World
 {
@@ -52,6 +53,11 @@ namespace TrippingCubes.World
             this.userDataFileSystem = userDataFileSystem ??
                 throw new ArgumentNullException(nameof(userDataFileSystem));
             this.worldDataPathRoot = worldDataPathRoot;
+
+            if (!userDataFileSystem.IsWritable)
+                Log.Information("The game file system is read-only - any " +
+                    "modifications to the game world in this session will " +
+                    "not be saved.");
 
             try
             {
@@ -128,7 +134,7 @@ namespace TrippingCubes.World
                 throw new ArgumentException("The specified data array is " +
                     "not cubic.");
 
-            Action commitDataAsync = delegate ()
+            void commitDataAsync()
             {
                 try
                 {
@@ -157,7 +163,6 @@ namespace TrippingCubes.World
                             }
                         }
                     }
-                    
 
                     //Removes empty chunk files to keep the registry clean.
                     if (!containedNonDefaultBlocks)
@@ -166,9 +171,10 @@ namespace TrippingCubes.World
                     onSuccess();
                 }
                 catch (Exception exc) { onFailure(exc); }
-            };
+            }
 
-            Task.Run(commitDataAsync);
+            if (userDataFileSystem.IsWritable) Task.Run(commitDataAsync);
+            else onSuccess();
         }
 
         public void BeginCheckoutData(Vector3I offset, 
@@ -209,11 +215,12 @@ namespace TrippingCubes.World
         }
 
         /// <summary>
-        /// Ensures that the target <see cref="worldDataPathRoot"/> exists.
+        /// Ensures that the target <see cref="worldDataPathRoot"/> exists and
+        /// the file system is writable.
         /// </summary>
         /// <exception cref="Exception">
         /// Is thrown when checking the directory existance or creating a 
-        /// non-existant directory fails.
+        /// non-existant directory fails or when the file system is read-only.
         /// </exception>
         private void ProbeSaveDirectory()
         {
