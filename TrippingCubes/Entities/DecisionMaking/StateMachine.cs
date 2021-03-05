@@ -6,6 +6,10 @@ namespace TrippingCubes.Entities.DecisionMaking
     {
         private Action currentStateBehavior;
         private Action beforeTransitionToNextState;
+        private DateTime lastBehaviorExecution;
+
+        protected TimeSpan BehaviorExecutionFrequency { get; set; }
+            = TimeSpan.FromSeconds(0.5);
 
         protected StateMachine()
         {
@@ -21,10 +25,16 @@ namespace TrippingCubes.Entities.DecisionMaking
 
         public virtual void Update()
         {
-            beforeTransitionToNextState?.Invoke();
-            beforeTransitionToNextState = null;
+            if ((DateTime.Now - lastBehaviorExecution) >=
+                BehaviorExecutionFrequency)
+            {
+                beforeTransitionToNextState?.Invoke();
+                beforeTransitionToNextState = null;
 
-            currentStateBehavior.Invoke();
+                currentStateBehavior.Invoke();
+
+                lastBehaviorExecution = DateTime.Now;
+            }
         }
 
         protected abstract void PerformInitialBehavior();
