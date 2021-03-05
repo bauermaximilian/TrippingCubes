@@ -56,23 +56,89 @@ namespace TrippingCubes
 
         internal InputScheme InputScheme { get; private set; }
 
+        internal Camera Camera => gameParameters.Camera;
+
+        internal new ResourceManager Resources => base.Resources;
+
+        internal ModelCache Models { get; private set; }
+
+        private readonly FileSystemPath worldConfigurationPath =
+            "/Worlds/Default.xml";
+
         public static void Main(string[] args)
         {
             Log.UseEnglishExceptionMessages = true;
             Log.MessageLogged += (s, e) =>
                 Console.WriteLine(e.ToString(Console.BufferWidth - 2));
-            TrippingCubesGame game = new TrippingCubesGame();
-            game.Run(new ShamanTK.Platforms.DesktopGL.PlatformProvider());
+            TrippingCubesGame game = new TrippingCubesGame(
+                args.Length > 0 ? args[0] : null);
+            game.Run(new ShamanTK.Platforms.DesktopGL.PlatformProvider(),
+                FileSystem.ProgramDataWritable);
 
             if (Log.HighestLogMessageLevel >= Log.MessageLevel.Error)
                 Console.ReadKey(true);
+        }
+
+        public TrippingCubesGame(string worldConfigurationPath)
+        {
+            if (!string.IsNullOrWhiteSpace(worldConfigurationPath))
+            {
+                try
+                {
+                    FileSystemPath customWorldConfigurationPath =
+                        new FileSystemPath(worldConfigurationPath, false);
+                    if (!customWorldConfigurationPath.IsAbsolute)
+                        throw new Exception("The path must be absolute and " +
+                            "start with a single '/'.");
+                    this.worldConfigurationPath = customWorldConfigurationPath;
+                }
+                catch (Exception exc)
+                {
+                    Log.Error("The specified world configuration path is " +
+                        "invalid and will be ignored.", exc);
+                }
+            }
         }
 
         protected override void Load()
         {
             InputScheme = new InputScheme(Controls);
 
-            World = new GameWorld(this, Resources, gameParameters.Camera);
+            Models = new ModelCache(Resources);
+
+            GameWorldConfiguration configuration = null;
+            try
+            {
+                configuration =
+                    GameWorldConfiguration.FromXml(Resources.FileSystem,
+                    worldConfigurationPath);
+            }
+            catch (Exception exc)
+            {
+                Log.Error("The game world configuration couldn't be loaded " +
+                    $"from {worldConfigurationPath}. The application will " +
+                    "be terminated.", exc);
+                Close();
+                return;
+            }
+
+            try
+            {
+                FileSystemPath worldChunkDirectoryPath =
+                    FileSystemPath.Combine(
+                        worldConfigurationPath.GetParentDirectory(),
+                        $"{worldConfigurationPath.GetFileName(true)}/");
+
+                World = new GameWorld(configuration, worldChunkDirectoryPath,
+                    this);
+            }
+            catch (Exception exc)
+            {
+                Log.Error("The game world initialisation failed. " +
+                    "The application will be terminated.", exc);
+                Close();
+                return;
+            }
             
             gameParameters.Filters.ColorShades = new Vector3(8, 8, 4);
             gameParameters.Filters.ResolutionScaleFactor = 0.42f;
@@ -137,7 +203,7 @@ namespace TrippingCubes
         protected override void Unload()
         {
             gameConsole?.Dispose();
-            World.Unload();
+            World?.Unload();
         }
 
         protected override void Redraw(TimeSpan delta)

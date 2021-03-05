@@ -137,7 +137,7 @@ namespace TrippingCubes.Entities
             {
                 if (value != characterModelPath)
                 {
-                    World.ModelCache.LoadModel(value, (success, model, exc) =>
+                    World.Game.Models.LoadModel(value, (success, model, exc) =>
                     {
                         if (success) CharacterModel = model;
                         else Log.Warning("A character model with the path " +
@@ -156,7 +156,7 @@ namespace TrippingCubes.Entities
             {
                 if (value != characterWeaponPath)
                 {
-                    World.ModelCache.LoadModel(value, (success, model, exc) =>
+                    World.Game.Models.LoadModel(value, (success, model, exc) =>
                     {
                         if (success) WeaponModel = model;
                         else Log.Warning("A weapon model with the path " +
@@ -219,7 +219,7 @@ namespace TrippingCubes.Entities
         public void ApplyParameters(
             IEnumerable<KeyValuePair<string, string>> parameters)
         {
-            PrimitiveTypeParser.TryAssign(parameters, this);
+            PrimitiveTypeParser.TryAssign(parameters, this, true);
         }
 
         public void Update(TimeSpan delta)

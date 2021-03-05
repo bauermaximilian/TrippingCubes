@@ -24,11 +24,8 @@ using ShamanTK.IO;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Numerics;
-using System.Reflection;
 using System.Threading;
-using System.Xml;
 using TrippingCubes.Common;
 using TrippingCubes.Entities;
 using TrippingCubes.Physics;
@@ -42,8 +39,6 @@ namespace TrippingCubes
         private const float DistanceForAvailabilityDataOnly = 48;
         private const float DistanceForAvailabilityNone = 64;
 
-        public ModelCache ModelCache { get; }
-
         public ResourceManager Resources { get; }
 
         public PhysicsSystem Physics { get; }
@@ -52,99 +47,121 @@ namespace TrippingCubes
 
         public Chunk<BlockVoxel> RootChunk { get; }
 
-        public Camera Camera { get; }
-
         public IReadOnlyCollection<IEntity> Entities { get; }
 
         public TrippingCubesGame Game { get; }
 
         private MeshBuffer skyboxMesh;
-        private TextureBuffer skyboxTextureInner;
-        private TextureBuffer skyboxTextureOuter;
+        private TextureBuffer skyboxTexture;
         private bool isDisposed;
 
         private readonly List<IEntity> entities = new List<IEntity>();
 
-        public GameWorld(TrippingCubesGame game, ResourceManager resources, 
-            Camera camera)
+        public GameWorld(GameWorldConfiguration configuration,
+            FileSystemPath worldChunkDirectoryPath,
+            TrippingCubesGame game)
         {
-            Game = game;
+            DateTime startTime = DateTime.Now;
 
-            Resources = resources;
+            Game = game;
 
             Entities = new ReadOnlyCollection<IEntity>(entities);
 
-            ModelCache = new ModelCache(resources);
-
             Physics = new PhysicsSystem(IsBlockSolid, IsBlockLiquid);
 
-            Camera = camera;
-
-            DateTime startTime = DateTime.Now;
-            BlockRegistryBuilder blockRegistryBuilder =
-                BlockRegistryBuilder.FromXml("/Vaporwave/registry.xml",
-                resources.FileSystem, false);
-            Blocks = blockRegistryBuilder.GenerateRegistry(
-                resources.FileSystem);
-            Log.Trace("Block registry with " + Blocks.Count +
-                " block definitions loaded in " +
-                (DateTime.Now - startTime).TotalMilliseconds + "ms.");
-
-            IFileSystem userDataFileSystem = 
-                FileSystem.CreateUserDataFileSystem("TrippingCubes");
-            FileSystemPath worldSubPath = "/world/";
-
-            RootChunk = new Chunk<BlockVoxel>(
-                new BlockChunkManager(Blocks, resources,
-                userDataFileSystem, worldSubPath));
-
-            resources.LoadMesh(MeshData.Skybox).Subscribe(
-                r => skyboxMesh = r);
-            resources.LoadTexture("/Vaporwave/skybox-inner.png",
-                TextureFilter.Linear).Subscribe(
-                r => skyboxTextureInner = r);
-            resources.LoadTexture("/Vaporwave/skybox-outer.png",
-                TextureFilter.Linear).Subscribe(
-                r => skyboxTextureOuter = r);
-
+            Log.Trace("Initializing world style...");
             try
             {
-                FileSystemPath entitiesDefinitionsPath =
-                    FileSystemPath.Combine(worldSubPath, "entities.xml");
-                if (userDataFileSystem.ExistsFile(entitiesDefinitionsPath))
-                {
-                    int spawnedEntities =
-                        SpawnFromFile(userDataFileSystem,
-                        entitiesDefinitionsPath);
-
-                    Log.Information($"Spawned {spawnedEntities} entities.");
-                }
-                else
-                {
-                    Log.Information("No entity definitions file was found.");
-                }
+                Game.Resources.LoadMesh(MeshData.Skybox).Subscribe(
+                    r => skyboxMesh = r);
+                Game.Resources.LoadTexture(configuration.SkyboxPath,
+                    TextureFilter.Linear).Subscribe(
+                    r => skyboxTexture = r);
             }
             catch (Exception exc)
             {
-                Log.Warning("Failed spawning entities from file.", exc);
+                Log.Warning("The skybox couldn't be loaded and will not " +
+                    "be available.", exc);
             }
+            try
+            {
+                DateTime localStartTime = DateTime.Now;
+                BlockRegistryBuilder blockRegistryBuilder =
+                    BlockRegistryBuilder.FromXml(
+                        configuration.BlockRegistryPath,
+                        Game.Resources.FileSystem, false);
+                Blocks = blockRegistryBuilder.GenerateRegistry(
+                    Game.Resources.FileSystem);
+                Log.Trace("Block registry with " + Blocks.Count +
+                    " block definitions initialized in " +
+                    (DateTime.Now - localStartTime).TotalMilliseconds + "ms.");
+            }
+            catch (Exception exc)
+            {
+                throw new Exception("The block registry couldn't be " +
+                    "initialized.", exc);
+            }
+
+
+            Log.Trace("Initializing world chunk manager...");
+            try
+            {
+                RootChunk = new Chunk<BlockVoxel>(
+                    new BlockChunkManager(Blocks, Game.Resources,
+                    Game.Resources.FileSystem, worldChunkDirectoryPath));
+            } 
+            catch (Exception exc)
+            {
+                throw new Exception("The world chunk manager couldn't be " +
+                    "initialized.", exc);
+            }
+
+
+            Log.Trace("Spawning entities...");
+            foreach (EntityInstantiation instantiation in
+                configuration.Entities)
+            {
+                if (configuration.EntityConfigurations.TryGetValue(
+                    instantiation.ConfigurationIdentifier,
+                    out EntityConfiguration entityConfiguration))
+                {
+                    try
+                    {
+                        IEntity entity = entityConfiguration.Instantiate(this,
+                            instantiation.InstanceParameters);
+                        entities.Add(entity);
+                    }
+                    catch (Exception exc)
+                    {
+                        Log.Warning($"Entity #{entities.Count} couldn't " +
+                            "be spawned and will be skipped.", exc);
+                    }
+                }
+            }
+            Log.Trace($"Spawned {entities.Count} entities.");
+
+            Log.Trace("Game world initialized in " +
+                (DateTime.Now - startTime).TotalMilliseconds + "ms.");
         }
 
         public void Redraw(IRenderContext context)
         {
             context.Mesh = skyboxMesh;
 
+            /*
+            // Former "outer" skybox
             context.Texture = skyboxTextureOuter;
             context.Transformation = MathHelper.CreateTransformation(
-                Camera.Position,
-                new Vector3(Camera.ClippingRange.Y - 100),
+                Game.Camera.Position,
+                new Vector3(Game.Camera.ClippingRange.Y - 100),
                 Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
             context.Draw();
+            */
 
-            context.Texture = skyboxTextureInner;
+            context.Texture = skyboxTexture;
             context.Transformation = MathHelper.CreateTransformation(
-                Camera.Position, new Vector3((
-                Camera.ClippingRange.Y - 100) * 0.65f),
+                Game.Camera.Position, new Vector3((
+                Game.Camera.ClippingRange.Y - 100) * 0.65f),
                 Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
             context.Opacity = MathHelper.CalculateTimeSine(0.5, 0.05) + 0.95f;
             context.Draw();
@@ -168,7 +185,7 @@ namespace TrippingCubes
                    chunk.SideLength / 2.0f);
 
                 float distanceFromCamera =
-                    (Camera.Position - chunkCenter).Length();
+                    (Game.Camera.Position - chunkCenter).Length();
 
                 if (distanceFromCamera < DistanceForAvailabilityDataOnly)
                     chunk.ChangeAvailability(ChunkAvailability.Full);
@@ -186,86 +203,6 @@ namespace TrippingCubes
             foreach (var entity in entities) entity.Update(delta);
 
             Physics.Update(delta);
-        }
-
-        public int SpawnFromFile(IFileSystem fileSystem,
-            FileSystemPath definitionsFilePath)
-        {            
-            XmlDocument document = new XmlDocument();
-
-            try
-            {
-                using Stream stream = fileSystem.OpenFile(definitionsFilePath, 
-                    false);
-                document.Load(stream);
-
-                if (document.DocumentElement.Name != "Entities")
-                    throw new Exception("The document element name is " +
-                        "invalid!");
-            }
-            catch (Exception exc)
-            {
-                throw new Exception("The entity definitions couldn't be " +
-                    "loaded.", exc);
-            }
-
-            static IEnumerable<KeyValuePair<string,string>> GetNodeEnumerator(
-                XmlNode node)
-            {
-                foreach (XmlNode parameterNode in node.ChildNodes)
-                {
-                    yield return new KeyValuePair<string, string>(
-                        parameterNode.Name, parameterNode.InnerText);
-                }
-            }
-
-            int entities = 0;
-            foreach (XmlNode entityNode in document.DocumentElement.ChildNodes)
-            {
-                string typeName = entityNode.Name;
-                var parameters = GetNodeEnumerator(entityNode);
-                if (!TrySpawnEntity(typeName, parameters, out IEntity entity))
-                {
-                    Log.Warning($"The entity of type {typeName} couldn't be " +
-                        $"spawned.");
-                }
-                else
-                {
-                    entities++;
-                }
-            }
-            return entities;
-        }
-
-        public bool TrySpawnEntity(string typeName,
-            IEnumerable<KeyValuePair<string, string>> parameters,
-            out IEntity entity)
-        {
-            Type type = Assembly.GetExecutingAssembly().GetType(
-                $"TrippingCubes.Entities.{typeName}");
-            if (type != null && typeof(IEntity).IsAssignableFrom(type))
-            {
-                ConstructorInfo constructor = 
-                    type.GetConstructor(new Type[] { typeof(GameWorld) });
-
-                if (constructor != null)
-                {
-                    entity = (IEntity)constructor.Invoke(
-                        new object[] { this });
-                    try { entity.ApplyParameters(parameters); }
-                    catch (Exception exc)
-                    {
-                        Log.Warning("Some of the parameters for an entity " +
-                            $"of type {typeName} couldn't be assigned." +
-                            "The entity was spawned anyways.", exc);
-                    }
-                    entities.Add(entity);
-                    return true;
-                }
-            }
-
-            entity = null;
-            return false;
         }
 
         public void Unload()
@@ -296,6 +233,9 @@ namespace TrippingCubes
 
                 Log.Trace("All chunks saved.");
             }
+
+            skyboxTexture?.Dispose();
+            skyboxMesh?.Dispose();
 
             isDisposed = true;
         }

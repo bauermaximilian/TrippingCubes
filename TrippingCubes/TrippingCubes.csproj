@@ -7,11 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Common\CharacterModel.cs" />
-    <Compile Remove="Entities\AdvancedCharacter.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="Physics\RigidBody.cs~RF1fb71d2.TMP" />
   </ItemGroup>
 
@@ -23,13 +18,13 @@
     <None Update="Assets\ABOUT.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Characters\sprite_test.png">
+    <None Update="Assets\Models\sprite_test.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Characters\synthsword.glb">
+    <None Update="Assets\Models\synthsword.glb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Characters\testcharacter.glb">
+    <None Update="Assets\Models\testcharacter.glb">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="Assets\LICENSE.txt">
@@ -38,198 +33,197 @@
     <None Update="Assets\LICENSE_VT323-Regular.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\cubic-lines_purple.png">
+    <None Update="Assets\Styles\Vaporwave\cubic-lines_purple.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\cubic-lines_purple_double.png">
+    <None Update="Assets\Styles\Vaporwave\cubic-lines_purple_double.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\cubic-lines_yellow.png">
+    <None Update="Assets\Styles\Vaporwave\cubic-lines_yellow.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\cubic-lines_yellow_alt-1.png">
+    <None Update="Assets\Styles\Vaporwave\cubic-lines_yellow_alt-1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\cubic-lines_yellow_double.png">
+    <None Update="Assets\Styles\Vaporwave\cubic-lines_yellow_double.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\gradients_green_floor-lit.png">
+    <None Update="Assets\Styles\Vaporwave\gradients_green_floor-lit.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\gradients_green_floor-unlit.png">
+    <None Update="Assets\Styles\Vaporwave\gradients_green_floor-unlit.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\gradients_green_wall-bottom.png">
+    <None Update="Assets\Styles\Vaporwave\gradients_green_wall-bottom.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\gradients_green_wall-top.png">
+    <None Update="Assets\Styles\Vaporwave\gradients_green_wall-top.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\gradients_green_wall.png">
+    <None Update="Assets\Styles\Vaporwave\gradients_green_wall.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\registry.xml">
+    <None Update="Assets\Styles\Vaporwave\registry.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\skybox-combined.png">
+    <None Update="Assets\Styles\Vaporwave\skybox.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\skybox-inner.png">
+    <None Update="Assets\Styles\Vaporwave\skybox-inner.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\Vaporwave\skybox-outer.png">
+    <None Update="Assets\Styles\Vaporwave\skybox-outer.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\brick_grey.png">
+    <None Update="Assets\Styles\VoxelPack\brick_grey.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\brick_red.png">
+    <None Update="Assets\Styles\VoxelPack\brick_red.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\dirt.png">
+    <None Update="Assets\Styles\VoxelPack\dirt.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\dirt_grass.png">
+    <None Update="Assets\Styles\VoxelPack\dirt_grass.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\dirt_sand.png">
+    <None Update="Assets\Styles\VoxelPack\dirt_sand.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\dirt_snow.png">
+    <None Update="Assets\Styles\VoxelPack\dirt_snow.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\error.png">
+    <None Update="Assets\Styles\VoxelPack\error.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\glass.png">
+    <None Update="Assets\Styles\VoxelPack\glass.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\glass_frame.png">
+    <None Update="Assets\Styles\VoxelPack\glass_frame.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\grass1.png">
+    <None Update="Assets\Styles\VoxelPack\grass1.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\grass2.png">
+    <None Update="Assets\Styles\VoxelPack\grass2.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\grass3.png">
+    <None Update="Assets\Styles\VoxelPack\grass3.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\grass4.png">
+    <None Update="Assets\Styles\VoxelPack\grass4.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\grass_top.png">
+    <None Update="Assets\Styles\VoxelPack\grass_top.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\gravel_dirt.png">
+    <None Update="Assets\Styles\VoxelPack\gravel_dirt.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\gravel_stone.png">
+    <None Update="Assets\Styles\VoxelPack\gravel_stone.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\greysand.png">
+    <None Update="Assets\Styles\VoxelPack\greysand.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\greystone.png">
+    <None Update="Assets\Styles\VoxelPack\greystone.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\greystone_sand.png">
+    <None Update="Assets\Styles\VoxelPack\greystone_sand.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\ice.png">
+    <None Update="Assets\Styles\VoxelPack\ice.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\lava.png">
+    <None Update="Assets\Styles\VoxelPack\lava.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\leaves_orange_transparent.png">
+    <None Update="Assets\Styles\VoxelPack\leaves_orange_transparent.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\leaves_transparent.png">
+    <None Update="Assets\Styles\VoxelPack\leaves_transparent.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\mushroom_brown.png">
+    <None Update="Assets\Styles\VoxelPack\mushroom_brown.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\mushroom_red.png">
+    <None Update="Assets\Styles\VoxelPack\mushroom_red.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\mushroom_tan.png">
+    <None Update="Assets\Styles\VoxelPack\mushroom_tan.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\redsand.png">
+    <None Update="Assets\Styles\VoxelPack\redsand.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\redstone.png">
+    <None Update="Assets\Styles\VoxelPack\redstone.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\redstone_sand.png">
+    <None Update="Assets\Styles\VoxelPack\redstone_sand.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\registry.xml">
+    <None Update="Assets\Styles\VoxelPack\registry.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\sand.png">
+    <None Update="Assets\Styles\VoxelPack\sand.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\skybox.png">
+    <None Update="Assets\Styles\VoxelPack\skybox.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\snow.png">
+    <None Update="Assets\Styles\VoxelPack\snow.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\stone.png">
+    <None Update="Assets\Styles\VoxelPack\stone.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\stone_dirt.png">
+    <None Update="Assets\Styles\VoxelPack\stone_dirt.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\stone_grass.png">
+    <None Update="Assets\Styles\VoxelPack\stone_grass.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\stone_sand.png">
+    <None Update="Assets\Styles\VoxelPack\stone_sand.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\stone_snow.png">
+    <None Update="Assets\Styles\VoxelPack\stone_snow.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\torch.png">
+    <None Update="Assets\Styles\VoxelPack\torch.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\trunk_side.png">
+    <None Update="Assets\Styles\VoxelPack\trunk_side.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\trunk_top.png">
+    <None Update="Assets\Styles\VoxelPack\trunk_top.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\trunk_white_side.png">
+    <None Update="Assets\Styles\VoxelPack\trunk_white_side.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\trunk_white_top.png">
+    <None Update="Assets\Styles\VoxelPack\trunk_white_top.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\water.png">
+    <None Update="Assets\Styles\VoxelPack\water.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\wood.png">
+    <None Update="Assets\Styles\VoxelPack\wood.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Assets\VoxelPack\wood_red.png">
+    <None Update="Assets\Styles\VoxelPack\wood_red.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Assets\VT323-Regular.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Assets\Worlds\Default.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Assets\Characters\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Common\CharacterModel.cs" />
-    <None Include="Entities\AdvancedCharacter.cs" />
+    <Folder Include="Assets\Models\" />
+    <Folder Include="Assets\Worlds\Default\" />
   </ItemGroup>
 
 </Project>
