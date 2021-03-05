@@ -127,7 +127,7 @@ namespace TrippingCubes
                 FileSystemPath worldChunkDirectoryPath =
                     FileSystemPath.Combine(
                         worldConfigurationPath.GetParentDirectory(),
-                        $"{worldConfigurationPath.GetFileName(true)}/");
+                        $"{worldConfigurationPath.GetFileName(true)}.world");
 
                 World = new GameWorld(configuration, worldChunkDirectoryPath,
                     this);

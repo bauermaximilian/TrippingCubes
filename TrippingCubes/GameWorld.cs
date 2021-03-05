@@ -24,6 +24,7 @@ using ShamanTK.IO;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Numerics;
 using System.Threading;
 using TrippingCubes.Common;
@@ -51,15 +52,17 @@ namespace TrippingCubes
 
         public TrippingCubesGame Game { get; }
 
+        private IFileSystem FileSystem => Game.Resources.FileSystem;
+
         private MeshBuffer skyboxMesh;
         private TextureBuffer skyboxTexture;
         private bool isDisposed;
 
         private readonly List<IEntity> entities = new List<IEntity>();
+        private readonly ZipFileSystem zipFileSystem;
 
         public GameWorld(GameWorldConfiguration configuration,
-            FileSystemPath worldChunkDirectoryPath,
-            TrippingCubesGame game)
+            FileSystemPath worldFilePath, TrippingCubesGame game)
         {
             DateTime startTime = DateTime.Now;
 
@@ -89,9 +92,9 @@ namespace TrippingCubes
                 BlockRegistryBuilder blockRegistryBuilder =
                     BlockRegistryBuilder.FromXml(
                         configuration.BlockRegistryPath,
-                        Game.Resources.FileSystem, false);
+                        FileSystem, false);
                 Blocks = blockRegistryBuilder.GenerateRegistry(
-                    Game.Resources.FileSystem);
+                    FileSystem);
                 Log.Trace("Block registry with " + Blocks.Count +
                     " block definitions initialized in " +
                     (DateTime.Now - localStartTime).TotalMilliseconds + "ms.");
@@ -106,10 +109,67 @@ namespace TrippingCubes
             Log.Trace("Initializing world chunk manager...");
             try
             {
+                FileSystemPath primaryWorldBackupPath =
+                    FileSystemPath.Combine(worldFilePath.GetParentDirectory(),
+                    $"{worldFilePath.GetFileName(false)}1");
+                FileSystemPath secondaryWorldBackupPath =
+                    FileSystemPath.Combine(worldFilePath.GetParentDirectory(),
+                    $"{worldFilePath.GetFileName(false)}2");
+
+                if (FileSystem.IsWritable)
+                {
+                    try
+                    {
+                        if (FileSystem.ExistsFile(primaryWorldBackupPath))
+                        {
+                            using Stream secondaryBackupStream =
+                                FileSystem.CreateFile(secondaryWorldBackupPath,
+                                true);
+                            using Stream primaryWorldBackup =
+                                FileSystem.OpenFile(primaryWorldBackupPath,
+                                false);
+
+                            primaryWorldBackup.CopyTo(secondaryBackupStream);
+                        }
+
+                        if (FileSystem.ExistsFile(worldFilePath))
+                        {
+                            using Stream primaryWorldBackup =
+                                FileSystem.CreateFile(primaryWorldBackupPath,
+                                true);
+                            using Stream worldFile =
+                                FileSystem.OpenFile(worldFilePath, false);
+
+                            worldFile.CopyTo(primaryWorldBackup);
+                        }
+                    }
+                    catch (Exception exc)
+                    {
+                        throw new Exception("The world backups couldn't be " +
+                            "updated.", exc);
+                    }
+                }
+
+                if (FileSystem.ExistsFile(worldFilePath))
+                {
+                    zipFileSystem = new ZipFileSystem(FileSystem.OpenFile(
+                        worldFilePath, FileSystem.IsWritable));
+                }
+                else if (FileSystem.IsWritable)
+                {
+                    Log.Information("No world data file was found at the " +
+                        "specified path. A new world file is initialized.");
+                    zipFileSystem = ZipFileSystem.Initialize(FileSystem, 
+                        worldFilePath, false);
+                }
+                else throw new Exception("The world data file doesn't exist " +
+                    $"under the path {worldFilePath} and can't be created, " +
+                    "as the file system is read-only.");
+
                 RootChunk = new Chunk<BlockVoxel>(
                     new BlockChunkManager(Blocks, Game.Resources,
-                    Game.Resources.FileSystem, worldChunkDirectoryPath));
-            } 
+                    zipFileSystem, "/"));
+            }
             catch (Exception exc)
             {
                 throw new Exception("The world chunk manager couldn't be " +
@@ -236,6 +296,7 @@ namespace TrippingCubes
 
             skyboxTexture?.Dispose();
             skyboxMesh?.Dispose();
+            zipFileSystem?.Dispose();
 
             isDisposed = true;
         }

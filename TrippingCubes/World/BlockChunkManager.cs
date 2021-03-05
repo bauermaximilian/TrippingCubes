@@ -38,6 +38,7 @@ namespace TrippingCubes.World
 
         public TextureBuffer BlockTexture { get; private set; }
 
+        private readonly object fileSystemLock = new object();
         private readonly IFileSystem userDataFileSystem;
         private readonly FileSystemPath worldDataPathRoot;
 
@@ -96,17 +97,21 @@ namespace TrippingCubes.World
         {
             HashSet<Vector3I> offsets = new HashSet<Vector3I>();
 
-            if (userDataFileSystem.ExistsDirectory(worldDataPathRoot))
+            lock (fileSystemLock)
             {
-                foreach (var element in 
-                    userDataFileSystem.Enumerate(worldDataPathRoot))
+                if (userDataFileSystem.ExistsDirectory(worldDataPathRoot))
                 {
-                    if (!element.IsDirectoryPath &&
-                        element.GetFileExtension() == ChunkFileExtension)
+                    foreach (var element in
+                        userDataFileSystem.Enumerate(worldDataPathRoot))
                     {
-                        string fileName = element.GetFileName(true);
-                        if (Vector3I.TryParse(fileName, out Vector3I offset))
-                            offsets.Add(offset);
+                        if (!element.IsDirectoryPath &&
+                            element.GetFileExtension() == ChunkFileExtension)
+                        {
+                            string fileName = element.GetFileName(true);
+                            if (Vector3I.TryParse(fileName, 
+                                out Vector3I offset))
+                                offsets.Add(offset);
+                        }
                     }
                 }
             }
@@ -162,6 +167,7 @@ namespace TrippingCubes.World
                                 }
                             }
                         }
+                        stream.Flush();
                     }
 
                     //Removes empty chunk files to keep the registry clean.
@@ -173,7 +179,12 @@ namespace TrippingCubes.World
                 catch (Exception exc) { onFailure(exc); }
             }
 
-            if (userDataFileSystem.IsWritable) Task.Run(commitDataAsync);
+            void commitDataAsyncLocked()
+            {
+                lock (fileSystemLock) commitDataAsync();
+            }
+
+            if (userDataFileSystem.IsWritable) Task.Run(commitDataAsyncLocked);
             else onSuccess();
         }
 
@@ -211,7 +222,12 @@ namespace TrippingCubes.World
                 catch (Exception exc) { onFailure(exc); }
             }
 
-            Task.Run(checkoutDataAsync);
+            void checkoutDataAsyncLocked()
+            {
+                lock (fileSystemLock) checkoutDataAsync();
+            }
+
+            Task.Run(checkoutDataAsyncLocked);
         }
 
         /// <summary>
@@ -226,8 +242,11 @@ namespace TrippingCubes.World
         {
             try
             {
-                if (!userDataFileSystem.ExistsDirectory(worldDataPathRoot))
-                    userDataFileSystem.CreateDirectory(worldDataPathRoot);
+                lock (fileSystemLock)
+                {
+                    if (!userDataFileSystem.ExistsDirectory(worldDataPathRoot))
+                        userDataFileSystem.CreateDirectory(worldDataPathRoot);
+                }
             }
             catch (Exception exc)
             {
