@@ -14,10 +14,12 @@ namespace TrippingCubes.Entities.Behaviors
         {
         }
 
-        protected override Vector3 CalculateAlignDirection()
+        protected override Vector3? CalculateAlignDirection()
         {
             var neighborhood = new List<IEntity>(GetNeighborhood(
                 NeighborhoodRadius, NeighborhoodAngle));
+
+            if (neighborhood.Count == 0) return null;
 
             Vector3 neighborhoodVelocities = Vector3.Zero;
 

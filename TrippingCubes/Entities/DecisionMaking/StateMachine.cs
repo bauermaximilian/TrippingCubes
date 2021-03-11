@@ -3,13 +3,14 @@
 namespace TrippingCubes.Entities.DecisionMaking
 {
     abstract class StateMachine
-    {
-        private Action currentStateBehavior;
+    {        
         private Action beforeTransitionToNextState;
-        private DateTime lastBehaviorExecution;
+        private TimeSpan timeSinceLastBehaviorExecution = TimeSpan.MaxValue;
+
+        protected Action CurrentStateBehavior { get; private set; }
 
         protected TimeSpan BehaviorExecutionFrequency { get; set; }
-            = TimeSpan.FromSeconds(0.5);
+            = TimeSpan.FromSeconds(0.1);
 
         protected StateMachine()
         {
@@ -19,22 +20,23 @@ namespace TrippingCubes.Entities.DecisionMaking
         public void TransitionTo(Action nextStateBehavior, 
             Action beforeTransitionToNextState = null)
         {
-            currentStateBehavior = nextStateBehavior ?? PerformInitialBehavior;
+            CurrentStateBehavior = nextStateBehavior ?? PerformInitialBehavior;
             this.beforeTransitionToNextState = beforeTransitionToNextState;
         }
 
-        public virtual void Update()
+        public virtual void Update(TimeSpan delta)
         {
-            if ((DateTime.Now - lastBehaviorExecution) >=
+            if (timeSinceLastBehaviorExecution >=
                 BehaviorExecutionFrequency)
             {
                 beforeTransitionToNextState?.Invoke();
                 beforeTransitionToNextState = null;
 
-                currentStateBehavior.Invoke();
+                CurrentStateBehavior.Invoke();
 
-                lastBehaviorExecution = DateTime.Now;
+                timeSinceLastBehaviorExecution = TimeSpan.Zero;
             }
+            else timeSinceLastBehaviorExecution += delta;
         }
 
         protected abstract void PerformInitialBehavior();

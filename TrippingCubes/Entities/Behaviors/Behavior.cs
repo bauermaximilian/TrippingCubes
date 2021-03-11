@@ -8,6 +8,10 @@ namespace TrippingCubes.Entities.Behaviors
 {
     abstract class Behavior<ParamT>
     {
+        public const float DefaultMaximumAccelerationLinear = 3.75f;
+
+        public const float DefaultMaximumAccelerationAngular = 3.57f;
+
         protected static Vector3 ClearAxisY { get; } = new Vector3(1, 0, 1);
 
         public ParamT Parameters { get; set; }
@@ -21,7 +25,8 @@ namespace TrippingCubes.Entities.Behaviors
             get => maximumAccelerationLinear;
             set => maximumAccelerationLinear = Math.Max(0, value);
         }
-        private float maximumAccelerationLinear = 3.75f;
+        private float maximumAccelerationLinear = 
+            DefaultMaximumAccelerationLinear;
 
         public Angle AccelerationAngular { get; private set; }
 
@@ -30,7 +35,8 @@ namespace TrippingCubes.Entities.Behaviors
             get => maximumAccelerationAngular;
             set => maximumAccelerationAngular = Math.Max(0, value);
         }
-        private float maximumAccelerationAngular = Angle.Deg(205);
+        private float maximumAccelerationAngular = 
+            DefaultMaximumAccelerationAngular;
 
         protected Behavior(IEntity self)
         {
@@ -39,13 +45,12 @@ namespace TrippingCubes.Entities.Behaviors
 
         public virtual void Update()
         {
-            AccelerationLinear = CalculateAccelerationLinear();
-            AccelerationAngular = CalculateAccelerationAngular();
-            
+            AccelerationLinear = CalculateAccelerationLinear();            
             if (AccelerationLinear.Length() > MaximumAccelerationLinear)
                 AccelerationLinear = Vector3.Normalize(AccelerationLinear) *
                     MaximumAccelerationLinear;
-            
+
+            AccelerationAngular = CalculateAccelerationAngular();
             Angle accelerationAngularAbsolute = Math.Abs(AccelerationAngular);
             if (AccelerationAngular > MaximumAccelerationAngular)
             {
@@ -66,9 +71,10 @@ namespace TrippingCubes.Entities.Behaviors
             foreach (IEntity body in Self.World.Entities ??
                 Enumerable.Empty<IEntity>())
             {
-                Vector3 relativePosition = Self.Body.Position - 
-                    body.Body.Position;
+                Vector3 relativePosition = body.Body.Position -
+                    Self.Body.Position;
                 if (body != Self && body is ICharacter &&
+                    !(body is IPlayerCharacter) &&
                     relativePosition.Length() <= radius)
                 {
                     var orientationOffset =
@@ -82,6 +88,11 @@ namespace TrippingCubes.Entities.Behaviors
                     }
                 }
             }
+        }
+
+        public override string ToString()
+        {
+            return GetType().Name;
         }
     }
 }

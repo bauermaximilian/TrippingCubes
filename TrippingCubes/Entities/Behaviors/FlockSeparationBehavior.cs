@@ -6,7 +6,7 @@ namespace TrippingCubes.Entities.Behaviors
 {
     class FlockSeparationBehavior<ParamT> : Behavior<ParamT>
     {
-        public float NeighborhoodRadius { get; set; } = 4;
+        public float NeighborhoodRadius { get; set; } = 2;
 
         public Angle NeighborhoodAngle { get; set; } = Angle.Deg(270);
 
@@ -38,6 +38,11 @@ namespace TrippingCubes.Entities.Behaviors
 
                 separationAcceleration += individualSeparationAcceleration;
             }
+
+            if (separationAcceleration.Length() > 0)
+                separationAcceleration = 
+                    Vector3.Normalize(separationAcceleration)
+                    * MaximumAccelerationLinear;
 
             return separationAcceleration;
         }

@@ -69,7 +69,20 @@ namespace TrippingCubes.Entities
         public Angle OrientationOffsetToTarget { get; private set; }
             = Angle.MaximumNormalized;
 
-        public string CurrentAction { get; private set; } = "";
+        public string CurrentState
+        {
+            get => currentState;
+            protected set
+            {
+                if (currentState != value)
+                {
+                    string previousState = value;
+                    currentState = value;
+                    StateChanged?.Invoke(previousState, currentState);
+                }
+            }
+        }
+        private string currentState = "";
 
         private DateTime lastKnowledgeUpdate = DateTime.MinValue;
         private DateTime lastDamageInflict = DateTime.MinValue;
@@ -182,7 +195,20 @@ namespace TrippingCubes.Entities
         #endregion
 
         #region Basic properties
-        public int HealthPoints { get; set; } = 100;
+        public int HealthPoints
+        {
+            get => healthPoints;
+            set
+            {
+                if (value != healthPoints)
+                {
+                    int previousValue = healthPoints;
+                    healthPoints = value;
+                    HealthPointsChanged?.Invoke(previousValue, healthPoints);
+                }
+            }
+        }
+        private int healthPoints = 100;
 
         public bool IsInvisible { get; private set; } = false;
 
@@ -190,6 +216,10 @@ namespace TrippingCubes.Entities
 
         public GameWorld World { get; }
         #endregion
+
+        public event ValueChangedEventHandler<int> HealthPointsChanged;
+
+        public event ValueChangedEventHandler<string> StateChanged;
 
         public BasicCharacter(GameWorld gameWorld)
         {
@@ -437,7 +467,7 @@ namespace TrippingCubes.Entities
 
         protected virtual void PerformWanderIdle()
         {
-            CurrentAction = nameof(PerformWanderIdle);
+            CurrentState = nameof(PerformWanderIdle);
 
             Align.TargetPosition = Arrive.TargetPosition = 
                 Player.Body.Position;
@@ -454,7 +484,7 @@ namespace TrippingCubes.Entities
 
         protected virtual void PerformDeath()
         {
-            CurrentAction = nameof(PerformDeath);
+            CurrentState = nameof(PerformDeath);
 
             if (!deathPerformed)
             {
@@ -473,7 +503,7 @@ namespace TrippingCubes.Entities
 
         protected virtual void PerformWanderAlert()
         {
-            CurrentAction = nameof(PerformWanderAlert);
+            CurrentState = nameof(PerformWanderAlert);
 
             Align.TargetPosition = Arrive.TargetPosition =
                 Player.Body.Position;
@@ -490,7 +520,7 @@ namespace TrippingCubes.Entities
 
         protected virtual void PerformArriveTargetPosition()
         {
-            CurrentAction = nameof(PerformArriveTargetPosition);
+            CurrentState = nameof(PerformArriveTargetPosition);
 
             Align.TargetPosition = Arrive.TargetPosition =
                 LastKnownPlayerPosition;
@@ -510,7 +540,7 @@ namespace TrippingCubes.Entities
 
         protected virtual void PerformAttackMelee()
         {
-            CurrentAction = nameof(PerformAttackMelee);
+            CurrentState = nameof(PerformAttackMelee);
 
             Align.TargetPosition = Arrive.TargetPosition =
                 LastKnownPlayerPosition;
@@ -537,7 +567,7 @@ namespace TrippingCubes.Entities
 
         protected virtual void PerformAttackRange()
         {
-            CurrentAction = nameof(PerformAttackRange);
+            CurrentState = nameof(PerformAttackRange);
 
             Align.TargetPosition = Arrive.TargetPosition =
                 LastKnownPlayerPosition;

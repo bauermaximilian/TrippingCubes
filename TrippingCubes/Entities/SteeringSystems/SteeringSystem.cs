@@ -11,6 +11,8 @@ namespace TrippingCubes.Entities.SteeringSystems
     {
 		private Behavior<ParamT>[] behaviors;
 
+		public bool IsEnabled { get; set; } = true;
+
 		public Vector3 AccelerationLinear { get; private set; }
 
         public Angle AccelerationAngular { get; private set; }
@@ -65,10 +67,18 @@ namespace TrippingCubes.Entities.SteeringSystems
         {
 			ValidateBehaviorCache();
 
-			(Vector3 linear, Angle angular) = GetAccelerations(behaviors);
+			if (IsEnabled)
+			{
+				(Vector3 linear, Angle angular) = GetAccelerations(behaviors);
 
-			AccelerationLinear = linear;
-			AccelerationAngular = angular;
+				AccelerationLinear = linear;
+				AccelerationAngular = angular;
+			}
+			else
+			{
+				AccelerationLinear = Vector3.Zero;
+				AccelerationAngular = 0;
+			}
         }
 
 		protected abstract (Vector3 linear, Angle angular) GetAccelerations(

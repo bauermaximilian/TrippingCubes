@@ -1,29 +1,41 @@
 ﻿using ShamanTK.Common;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
 using TrippingCubes.Entities.Behaviors;
 
 namespace TrippingCubes.Entities.SteeringSystems
 {
-    public struct WeightedPriorityParameter : 
-        IComparable<WeightedPriorityParameter>
+    public struct WeightedPriorityParameter
     {
         public float Weight { get; }
 
         public int Priority { get; }
+
+        public WeightedPriorityParameter(float weight)
+        {
+            Weight = weight;
+            Priority = 0;
+        }
 
         public WeightedPriorityParameter(int priority, float weight)
         {
             Weight = weight;
             Priority = priority;
         }
+    }
 
-        public int CompareTo([AllowNull] WeightedPriorityParameter other)
+    internal class WeightedPriorityParameterComparer :
+        IComparer<Behavior<WeightedPriorityParameter>>
+    {
+        public static WeightedPriorityParameterComparer Instance { get; }
+            = new WeightedPriorityParameterComparer();
+
+        public int Compare(Behavior<WeightedPriorityParameter> x,
+            Behavior<WeightedPriorityParameter> y)
         {
-            return other.Priority.CompareTo(Priority);
+            return y.Parameters.Priority.CompareTo(x.Parameters.Priority);
         }
     }
 
@@ -31,16 +43,20 @@ namespace TrippingCubes.Entities.SteeringSystems
         SteeringSystem<WeightedPriorityParameter>
     {
         public float AccelerationLinearMinimumLength { get; set; } 
-            = 0.01f;
+            = 0.1f;
 
-        public Angle AccelerationAngularMinimumAbsolute { get; set; } 
-            = Angle.Deg(0.01f);
+        protected IEntity Self { get; }
+
+        protected SteeringSystemWeightedPriorities(IEntity self)
+        {
+            Self = self;
+        }
 
         protected override
             IEnumerable<Behavior<WeightedPriorityParameter>> GetBehaviors()
         {
             var behaviors = base.GetBehaviors().ToList();
-            behaviors.Sort();
+            behaviors.Sort(WeightedPriorityParameterComparer.Instance);
             return behaviors;
         }
 
@@ -48,49 +64,57 @@ namespace TrippingCubes.Entities.SteeringSystems
             IEnumerable<Behavior<WeightedPriorityParameter>> behaviors)
         {
             int currentPriority = int.MaxValue;
-            bool accelerationLinearCalculated = false,
-                accelerationAngularCalculated = false;
-
+            float currentPriorityLengthMaximum = 0;
             Vector3 currentAccelerationLinear = Vector3.Zero;
             Angle currentAccelerationAngular = 0;
 
             foreach (var behavior in behaviors)
             {
-                behavior.Update();
-
                 if (currentPriority == int.MaxValue)
                     currentPriority = behavior.Parameters.Priority;
 
                 if (currentPriority != behavior.Parameters.Priority)
                 {
                     if (currentAccelerationLinear.Length() >
+                        AccelerationLinearMinimumLength &&
+                        behavior.Parameters.Priority > 0)
+                    {
+                        continue;
+                    }
+                    else if (currentAccelerationLinear.Length() < 
                         AccelerationLinearMinimumLength)
-                        accelerationLinearCalculated = true;
-
-                    if (Math.Abs(currentAccelerationAngular) >
-                        AccelerationAngularMinimumAbsolute)
-                        accelerationLinearCalculated = true;
-
-                    if (accelerationLinearCalculated &&
-                        accelerationLinearCalculated) break;
-                    else currentPriority = behavior.Parameters.Priority;
+                    {
+                        currentPriority = behavior.Parameters.Priority;
+                        currentAccelerationLinear = Vector3.Zero;
+                        currentPriorityLengthMaximum = 0;
+                    }
                 }
 
-                if (!accelerationLinearCalculated)
-                    currentAccelerationLinear += 
-                        behavior.AccelerationLinear *
-                        behavior.Parameters.Weight;
+                behavior.Update();
 
-                if (!accelerationAngularCalculated)
+                currentAccelerationLinear +=
+                    behavior.AccelerationLinear *
+                    behavior.Parameters.Weight;
+
+                currentPriorityLengthMaximum = Math.Max(
+                    currentPriorityLengthMaximum,
+                    behavior.AccelerationLinear.Length());
+
+                if (Math.Abs(currentAccelerationAngular) < 0.01f)
+                {
                     currentAccelerationAngular +=
                         behavior.AccelerationAngular *
                         behavior.Parameters.Weight;
+                }
             }
 
-            if (currentAccelerationLinear.Length() > MaximumAccelerationLinear)
+            if (currentAccelerationLinear.Length() > 0)
+            {
                 currentAccelerationLinear =
                     Vector3.Normalize(currentAccelerationLinear) *
-                    MaximumAccelerationLinear;
+                    Math.Min(currentPriorityLengthMaximum,
+                    MaximumAccelerationLinear);
+            }
 
             Angle accelerationAngularAbsolute =
                 Math.Abs(currentAccelerationAngular);
@@ -98,6 +122,13 @@ namespace TrippingCubes.Entities.SteeringSystems
             {
                 currentAccelerationAngular /= accelerationAngularAbsolute;
                 currentAccelerationAngular *= MaximumAccelerationAngular;
+            }
+
+            if (float.IsNaN(currentAccelerationLinear.X) ||
+                float.IsNaN(currentAccelerationLinear.Y) ||
+                float.IsNaN(currentAccelerationLinear.Z))
+            {
+                currentAccelerationLinear = Vector3.Zero;
             }
 
             return (currentAccelerationLinear, currentAccelerationAngular);

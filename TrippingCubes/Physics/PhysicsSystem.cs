@@ -106,11 +106,11 @@ namespace TrippingCubes.Physics
 
             collisionNormal = collidedAxisIndex switch
             {
-                0 => Vector3.UnitX,
-                1 => Vector3.UnitY,
-                2 => Vector3.UnitZ,
+                0 => new Vector3(distance.X > 0 ? -1 : 1, 0, 0),
+                1 => new Vector3(0, distance.Y > 0 ? -1 : 1, 0),
+                2 => new Vector3(0, 0, distance.Z > 0 ? -1 : 1),
                 _ => Vector3.Zero
-            } * (collidedDir > 0 ? 1 : -1);
+            };
 
             return collided;
         }

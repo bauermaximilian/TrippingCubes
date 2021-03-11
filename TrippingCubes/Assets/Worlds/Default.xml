@@ -5,11 +5,11 @@
     <SkyboxPath>/Styles/Vaporwave/skybox.png</SkyboxPath>
   </Style>
   <Paths>
-    <CorridorPath Close="false">
-      <Point>0,0,0</Point>
-      <Point>0,0,5</Point>
-      <Point>5,0,5</Point>
-      <Point>0,0,0</Point>
+    <CorridorPath Close="true">
+      <Point>-4,-4,-4</Point>
+      <Point>-4,-4,6</Point>
+      <Point>0,-4,6</Point>
+      <Point>0,-4,-4</Point>
     </CorridorPath>
   </Paths>
   <EntityConfigurations>
@@ -26,12 +26,16 @@
       <CharacterModelPath>/Models/testcharacter.glb?modelNode=character</CharacterModelPath>
       <CharacterWeaponPath>/Models/testcharacter.glb?modelNode=sword</CharacterWeaponPath>
     </BasicRangeCharacter>
+    <AdvancedTestCharacter Type="TrippingCubes.Entities.AdvancedCharacter">
+      <CharacterModelPath>/Models/testcharacter.glb?modelNode=character</CharacterModelPath>
+      <CharacterWeaponPath>/Models/testcharacter.glb?modelNode=sword</CharacterWeaponPath>
+    </AdvancedTestCharacter>
   </EntityConfigurations>
   <Entities>
     <Player>
       <Position>15,3,-3</Position>
     </Player>
-    <BasicMeleeCharacter>
+    <!--<BasicMeleeCharacter>
       <Position>-6,4,0</Position>
     </BasicMeleeCharacter>
     <BasicMeleeCharacter>
@@ -42,6 +46,20 @@
     </BasicRangeCharacter>
     <BasicRangeCharacter>
       <Position>-8,4,-1</Position>
-    </BasicRangeCharacter>
+    </BasicRangeCharacter>-->
+    <AdvancedTestCharacter>
+      <Position>-6,4,0</Position>
+      <Name>PathGuy</Name>
+      <PatrolPathName>CorridorPath</PatrolPathName>
+      <PreferMeleeAttack>true</PreferMeleeAttack>
+    </AdvancedTestCharacter>
+    <!--<AdvancedTestCharacter>
+      <Name>DumbGuy</Name>
+      <Position>-4,4,-3</Position>
+    </AdvancedTestCharacter>
+    <AdvancedTestCharacter>
+      <Name>DumbGuy2</Name>
+      <Position>-4.5,4,6.5</Position>
+    </AdvancedTestCharacter>-->
   </Entities>
 </TrippingCubes>

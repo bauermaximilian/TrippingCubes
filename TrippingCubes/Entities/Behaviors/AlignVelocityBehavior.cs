@@ -8,7 +8,7 @@ namespace TrippingCubes.Entities.Behaviors
         {
         }
 
-        protected override Vector3 CalculateAlignDirection()
+        protected override Vector3? CalculateAlignDirection()
         {
             return Self.Body.Velocity;
         }

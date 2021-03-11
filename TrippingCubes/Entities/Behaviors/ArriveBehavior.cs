@@ -5,22 +5,22 @@ namespace TrippingCubes.Entities.Behaviors
 {
     class ArriveBehavior<ParamT> : SeekBehavior<ParamT>
     {
-        public float DecelerateRadius { get; set; }
+        public float DecelerateRadius { get; set; } = 3.25f;
 
-        public float ArrivalRadius { get; set; }
+        public float ArrivalRadius { get; set; } = 1.25f;
 
         public TimeSpan TimeToTargetSpeed { get; set; } =
             TimeSpan.FromSeconds(0.25);
 
         public ArriveBehavior(IEntity self) : base(self)
         {
-            DecelerateRadius = 3.25f;
-            ArrivalRadius = 1.25f;
         }
 
         protected override Vector3 CalculateAccelerationLinear()
         {
-            Vector3 direction = (TargetPosition - Self.Body.Position);
+            if (!TargetPosition.HasValue) return Vector3.Zero;
+
+            Vector3 direction = (TargetPosition.Value - Self.Body.Position);
             float distance = direction.Length();
 
             float targetSpeed = 0;

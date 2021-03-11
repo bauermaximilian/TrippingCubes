@@ -52,6 +52,8 @@ namespace TrippingCubes
 
         public TrippingCubesGame Game { get; }
 
+        public IReadOnlyDictionary<string, PathLinear> Paths { get; }
+
         private IFileSystem FileSystem => Game.Resources.FileSystem;
 
         private MeshBuffer skyboxMesh;
@@ -71,6 +73,9 @@ namespace TrippingCubes
             Entities = new ReadOnlyCollection<IEntity>(entities);
 
             Physics = new PhysicsSystem(IsBlockSolid, IsBlockLiquid);
+
+            Paths = new ReadOnlyDictionary<string, PathLinear>(
+                configuration.Paths ?? new Dictionary<string, PathLinear>());
 
             Log.Trace("Initializing world style...");
             try

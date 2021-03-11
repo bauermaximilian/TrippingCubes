@@ -220,8 +220,8 @@ namespace TrippingCubes
 
                 foreach (XmlNode pointNode in pathNode.ChildNodes)
                 {
-                    if (pathNode.NodeType != XmlNodeType.Element ||
-                        pathNode.Name != XmlNodePathPoint) continue;
+                    if (pointNode.NodeType != XmlNodeType.Element ||
+                        pointNode.Name != XmlNodePathPoint) continue;
 
                     if (!PrimitiveTypeParser.TryParse(pointNode.InnerText,
                         out Vector3 pathPoint))

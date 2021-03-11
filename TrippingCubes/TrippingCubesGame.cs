@@ -26,6 +26,7 @@ using TrippingCubes.Common;
 using System;
 using System.Numerics;
 using TrippingCubes.World;
+using System.Collections.Generic;
 
 namespace TrippingCubes
 {
@@ -48,7 +49,12 @@ namespace TrippingCubes
         private BlockKey currentCursorBlockKey = default;
         private Vector3I selectionStart;
         private bool editTempLock;
-        private bool cursorActive;        
+        private bool cursorActive;       
+        
+        internal static string DebugUpdateText { get; set; }
+
+        internal static List<(Vector3 Position, Color Color)> DebugMarkers
+        { get; } = new List<(Vector3 Position, Color Color)>();
 
         internal TextBox OnScreenTextBox { get; private set; }
 
@@ -250,6 +256,16 @@ namespace TrippingCubes
 
                 context.Draw();
             }
+
+            context.Mesh = cursor;
+            context.Texture = null;
+            foreach (var marker in DebugMarkers)
+            {
+                context.Color = marker.Color;
+                context.Transformation = MathHelper.CreateTransformation(
+                    marker.Position, new Vector3(0.042f, 50, 0.042f));
+                context.Draw();
+            }
         }
 
         private void RenderGui(IRenderContext context)
@@ -270,6 +286,9 @@ namespace TrippingCubes
 
         protected override void Update(TimeSpan delta)
         {
+            DebugUpdateText = "";
+            DebugMarkers.Clear();
+
             if (InputScheme.FullscreenToggle.IsActivated)
                 Graphics.Mode = Graphics.Mode == WindowMode.Fullscreen ?
                     WindowMode.NormalScalable : WindowMode.Fullscreen;
@@ -312,6 +331,9 @@ namespace TrippingCubes
             }
 
             World.Update(delta);
+
+            if (OnScreenTextBox != null) 
+                OnScreenTextBox.Text = DebugUpdateText ?? "";
         }
 
         private void GameConsole_CommandIssued(object sender, string e)
@@ -333,6 +355,7 @@ namespace TrippingCubes
 
                 if (block != null)
                 {
+                    //TODO: Add spawn entity functionality
                     /*
                     gameConsole.AppendOutputText("Cursor block changed to \"" +
                         block.Identifier + "\" (key '" + block.Key + "').");

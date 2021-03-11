@@ -30,7 +30,7 @@ using ShamanTK;
 
 namespace TrippingCubes.Entities
 {
-    class PlayerCharacter : ICharacter
+    class PlayerCharacter : IPlayerCharacter
     {
         public const float LookAccerlationDeg = 42.0f;
         public const float LookDragDeg = 6.9f;
@@ -104,7 +104,35 @@ namespace TrippingCubes.Entities
             }
         }
 
-        public int HealthPoints { get; set; } = 100;
+        public int HealthPoints
+        {
+            get => healthPoints;
+            set
+            {
+                if (value != healthPoints)
+                {
+                    int previousValue = healthPoints;
+                    healthPoints = value;
+                    HealthPointsChanged?.Invoke(previousValue, healthPoints);
+                }
+            }
+        }
+        private int healthPoints = 200;
+
+        public string CurrentState
+        {
+            get => currentState;
+            protected set
+            {
+                if (currentState != value)
+                {
+                    string previousState = value;
+                    currentState = value;
+                    StateChanged?.Invoke(previousState, currentState);
+                }
+            }
+        }
+        private string currentState = "";
 
         public bool IsInvisible => FlyModeEnabled;
 
@@ -113,6 +141,10 @@ namespace TrippingCubes.Entities
             get => Body.Position;
             set => Body.MoveTo(value);
         }
+
+        public event ValueChangedEventHandler<int> HealthPointsChanged;
+
+        public event ValueChangedEventHandler<string> StateChanged;
 
         public PlayerCharacter(GameWorld gameWorld)
         {
@@ -179,6 +211,9 @@ namespace TrippingCubes.Entities
 
             Camera.MoveTo(Body.BoundingBox.PivotBottom() +
                 new Vector3(0, 1.45f, 0) + headShift);
+
+            TrippingCubesGame.DebugUpdateText += 
+                $"Player: {Body.Position:F2} - {HealthPoints}HP\n";
 
             if (WeaponModel != null && !FlyModeEnabled)
             {

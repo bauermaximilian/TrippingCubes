@@ -10,12 +10,13 @@ namespace TrippingCubes.Entities.Behaviors
 
         public PathLinear Path { get; set; }
 
-        public float PathMovingOffset { get; set; } = 0.5f;
+        public float PathMovingOffset { get; set; } = 1.420f;
 
         private float pathOffset = 0;
 
         public PathFollowingBehavior(IEntity self) : base(self)
         {
+            MaximumAccelerationLinear *= 0.69f;
         }
 
         protected override Vector3 CalculateAccelerationLinear()
@@ -29,8 +30,8 @@ namespace TrippingCubes.Entities.Behaviors
                 float targetPathOffset = pathOffset + PathMovingOffset;
                 Vector3 target = Path.GetPosition(targetPathOffset);
 
-                return Vector3.Normalize(target - Self.Body.Position) *
-                    MaximumAccelerationLinear;
+                return Vector3.Normalize((target - Self.Body.Position)
+                    * ClearAxisY) * MaximumAccelerationLinear;
             }
             else return base.CalculateAccelerationLinear();
         }

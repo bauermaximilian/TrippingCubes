@@ -18,17 +18,12 @@ namespace TrippingCubes.Entities.Behaviors
         public WanderBehavior(IEntity self) : base(self)
         {
             WanderOffset = 4.2f;
-            WanderRadius = 1.15f;
-            WanderRate = Angle.Deg(8);
-            MaximumAccelerationLinear = 2.4f;
+            WanderRadius = 1f;
+            WanderRate = Angle.Deg(6);
+            MaximumAccelerationLinear *= 0.64f;
         }
 
-        public void TiltWanderOrientation()
-        {
-            wanderOrientation += Angle.Deg(180);
-        }
-
-        protected override Vector3 CalculateAlignDirection()
+        protected override Vector3? CalculateAlignDirection()
         {
             wanderOrientation += WanderRate *
                 (float)(random.NextDouble() - random.NextDouble());

@@ -6,26 +6,25 @@ namespace TrippingCubes.Entities.Behaviors
 {
     abstract class AlignBehavior<ParamT> : Behavior<ParamT>
     {
-        public float DecelerateRadius { get; set; }
+        public float DecelerateRadius { get; set; } = Angle.Deg(10);
 
-        public float ArrivalRadius { get; set; }
+        public float ArrivalRadius { get; set; } = Angle.Deg(3);
 
         public TimeSpan TimeToTargetSpeed { get; set; } =
             TimeSpan.FromSeconds(0.1);
 
         public AlignBehavior(IEntity self) : base(self)
         {
-            MaximumAccelerationAngular = Angle.Deg(205);
-            DecelerateRadius = Angle.Deg(15);
-            ArrivalRadius = Angle.Deg(7);
+            MaximumAccelerationAngular = Angle.Deg(225);
         }
 
         protected override Angle CalculateAccelerationAngular()
         {
-            Vector3 direction = CalculateAlignDirection();
+            Vector3? direction = CalculateAlignDirection();
+            if (!direction.HasValue) return Angle.Zero;
 
-            Angle targetOrientation = direction.Length() > 0 ?
-                (Angle)Math.Atan2(direction.X, direction.Z) : 
+            Angle targetOrientation = direction.Value.Length() > 0 ?
+                (Angle)Math.Atan2(direction.Value.X, direction.Value.Z) : 
                 Self.Body.Orientation;
 
             Angle rotation = (targetOrientation - Self.Body.Orientation +
@@ -48,6 +47,6 @@ namespace TrippingCubes.Entities.Behaviors
             else return 0;
         }
 
-        protected abstract Vector3 CalculateAlignDirection();
+        protected abstract Vector3? CalculateAlignDirection();
     }
 }

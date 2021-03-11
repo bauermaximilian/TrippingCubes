@@ -20,10 +20,12 @@ namespace TrippingCubes.Entities.Behaviors
             var neighborhood = new List<IEntity>(GetNeighborhood(
                 NeighborhoodRadius, NeighborhoodAngle));
 
+            if (neighborhood.Count == 0) return Vector3.Zero;
+
             Vector3 neighborhoodCenter = Vector3.Zero;
 
             foreach (var entity in neighborhood)
-                neighborhoodCenter += entity.Body.Position;
+                neighborhoodCenter += entity.Body.Position; 
 
             neighborhoodCenter /= neighborhood.Count;
 
