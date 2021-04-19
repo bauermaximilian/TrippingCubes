@@ -54,6 +54,8 @@ namespace TrippingCubes
 
         public ControlMapping AddBlock { get; }
 
+        public ControlMapping PickBlock { get; }
+
         public ControlMapping RemoveBlock { get; }
 
         public ControlMapping SwitchInputScheme { get; }
@@ -79,6 +81,7 @@ namespace TrippingCubes
             Exit = controls.Map(KeyboardKey.Escape);
             FullscreenToggle = controls.Map(KeyboardKey.F11);
             AddBlock = controls.Map(MouseButton.Left);
+            PickBlock = controls.Map(MouseButton.Middle);
             RemoveBlock = controls.Map(MouseButton.Right);
             SwitchInputScheme = controls.Map(KeyboardKey.Tab);
             FilterToggle = controls.Map(KeyboardKey.V);

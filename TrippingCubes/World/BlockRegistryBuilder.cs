@@ -324,9 +324,9 @@ namespace TrippingCubes.World
 
             if (IsBlockNode(blockNode, out var key, out var identifier))
             {
-                int luminance = BlockProperties.Default.Luminance;
-                bool isTranslucent = BlockProperties.Default.IsTranslucent;
-                
+                int luminance = BlockProperties.Solid.Luminance;
+                bool isTranslucent = BlockProperties.Solid.IsTranslucent;
+                BlockColliderType type = BlockProperties.Solid.Type;
 
                 XmlNode propertiesNode = blockNode["properties"];
                 if (propertiesNode != null)
@@ -334,6 +334,7 @@ namespace TrippingCubes.World
                     XmlNode luminanceNode = propertiesNode["luminance"];
                     XmlNode isTranslucentNode =
                         propertiesNode["isTranslucent"];
+                    XmlNode typeNode = propertiesNode["type"];
 
                     if (luminanceNode != null)
                     {
@@ -348,15 +349,23 @@ namespace TrippingCubes.World
                         if (!bool.TryParse(isTranslucentNode.InnerText,
                             out isTranslucent))
                             throw new FormatException("The specified " +
-                                "value for the isTranslucent node is no valid " +
-                                "boolean.");
+                                "value for the isTranslucent node is " +
+                                "no valid boolean.");
+                    }
+
+                    if (typeNode != null)
+                    {
+                        if (!Enum.TryParse(typeNode.InnerText, out type))
+                            throw new FormatException("The specified " +
+                                "value for the typeNode node is " +
+                                "no valid BlockColliderType.");
                     }
                 }
 
                 BlockProperties blockProperties;
                 try
                 {
-                    blockProperties = new BlockProperties(isTranslucent,
+                    blockProperties = new BlockProperties(type, isTranslucent,
                         luminance);
                 }
                 catch (Exception exc)

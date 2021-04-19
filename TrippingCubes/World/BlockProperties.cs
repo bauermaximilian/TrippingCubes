@@ -27,9 +27,20 @@ using System.Threading.Tasks;
 
 namespace TrippingCubes.World
 {
+    public enum BlockColliderType
+    {
+        None,
+        Solid,
+        Liquid
+    }
+
     public class BlockProperties
     {
-        public static BlockProperties Default => new BlockProperties(false, 0);
+        public static BlockProperties Air =>
+            new BlockProperties(BlockColliderType.None, true, 0);
+
+        public static BlockProperties Solid =>
+            new BlockProperties(BlockColliderType.Solid, false, 0);
 
         public int Luminance
         {
@@ -44,12 +55,16 @@ namespace TrippingCubes.World
 
         public bool IsTranslucent { get; private set; }
 
+        public BlockColliderType Type { get; private set; }
+
         public ColliderPrimitive Collider { get; private set; }
 
         public Vector3 ColliderOffset { get; private set; }
 
-        public BlockProperties(bool isTranslucent, int luminance)
+        public BlockProperties(BlockColliderType type, bool isTranslucent, 
+            int luminance)
         {
+            Type = type;
             IsTranslucent = isTranslucent;
             Luminance = luminance;
         }

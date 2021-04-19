@@ -27,6 +27,7 @@ using System;
 using System.Numerics;
 using TrippingCubes.World;
 using System.Collections.Generic;
+using static ShamanTK.Graphics.RenderParameters;
 
 namespace TrippingCubes
 {
@@ -71,6 +72,8 @@ namespace TrippingCubes
         private readonly FileSystemPath worldConfigurationPath =
             "/Worlds/Default.xml";
 
+        public AnimatedColor OverlayColor { get; } = new AnimatedColor();
+
         public static void Main(string[] args)
         {
             Log.UseEnglishExceptionMessages = true;
@@ -108,6 +111,8 @@ namespace TrippingCubes
 
         protected override void Load()
         {
+            OverlayColor.Clear(Color.Black);
+
             InputScheme = new InputScheme(Controls);
 
             Models = new ModelCache(Resources);
@@ -145,13 +150,18 @@ namespace TrippingCubes
                 Close();
                 return;
             }
-            
-            gameParameters.Filters.ColorShades = new Vector3(8, 8, 4);
-            gameParameters.Filters.ResolutionScaleFactor = 0.42f;
+
+            gameParameters.Filters.ScanlineEffectEnabled = true;
+            gameParameters.BackfaceCullingEnabled = true;
+            gameParameters.Filters.Enabled = true;
+            //gameParameters.Filters.ColorShades = new Vector3(16, 16, 8);
+            //gameParameters.Filters.ResolutionScaleFactor = 0.3f;
             gameParameters.Filters.ResolutionScaleFilter = 
                 TextureFilter.Nearest;
 
-            guiParameters.BackfaceCullingEnabled = true;
+            Camera.ClippingRange = new Vector2(0.05f, 500);
+
+            guiParameters.BackfaceCullingEnabled = false;
             guiParameters.Camera.ProjectionMode = 
                 ProjectionMode.OrthgraphicRelativeProportional;
 
@@ -184,7 +194,7 @@ namespace TrippingCubes
                         TypeSize = 0.035f
                     })
                     {
-                        Position = new Vector3(0.5f, 1f, 0f)
+                        Position = new Vector3(0.5f, 1f, 0.5f)
                     };
                 });
 
@@ -202,6 +212,7 @@ namespace TrippingCubes
                         "block you want to use,\nthen use the left/right " +
                         "mouse button to place blocks.\nHave fun :>");
                     Log.Information("HINT: Use F1 to open the console.");
+                    OverlayColor.Fade(Color.Transparent);
                 }
             };
         }
@@ -225,21 +236,26 @@ namespace TrippingCubes
 
             if (cursor != null && cursorActive)
             {
-                if ((InputScheme.AddBlock.IsActive || 
+                if (InputScheme.PickBlock.IsActive)
+                {
+                    context.Opacity = 0.5f;
+                    context.Color = Color.Blue;
+                }
+                else if ((InputScheme.AddBlock.IsActive ||
                     InputScheme.RemoveBlock.IsActive)
                     && !editTempLock)
                 {
                     context.Opacity = 0.5f;
-                    if (InputScheme.AddBlock.IsActive) 
+                    if (InputScheme.AddBlock.IsActive)
                         context.Color = Color.Green;
-                    else if (InputScheme.RemoveBlock.IsActive) 
+                    else if (InputScheme.RemoveBlock.IsActive)
                         context.Color = Color.Red;
                 }
                 else
                 {
-                    if (editTempLock) 
+                    if (editTempLock)
                         context.Opacity = 0.15f;
-                    else 
+                    else
                         context.Opacity = 0.2f;
 
                     context.Color = Color.White;
@@ -271,29 +287,53 @@ namespace TrippingCubes
         private void RenderGui(IRenderContext context)
         {
             context.Mesh = plane;
-            context.Transformation = MathHelper.CreateTransformation(
-                0.5f, 0.5f, 1,
-                Math.Max(1, (float)Graphics.Size.Width / Graphics.Size.Height),
-                Math.Max(1, (float)Graphics.Size.Height / Graphics.Size.Width),
-                1);
-
+            context.Transformation = CreateGuiLayerTransformation(1);
             context.Texture = gameRenderTarget;
             context.Draw();
 
+            if (OverlayColor.Color != Color.Transparent)
+            {
+                context.Transformation = CreateGuiLayerTransformation(0.55f);
+                context.Texture = null;
+                context.Color = OverlayColor.Color;
+                context.Draw();
+            }
+
             gameConsole?.Draw(context);
             OnScreenTextBox?.Draw(context);
-        }        
+        }
+
+        private Matrix4x4 CreateGuiLayerTransformation(float z)
+        {
+            return MathHelper.CreateTransformation(
+                0.5f, 0.5f, z,
+                Math.Max(1, (float)Graphics.Size.Width / Graphics.Size.Height),
+                Math.Max(1, (float)Graphics.Size.Height / Graphics.Size.Width),
+                1);
+        }
+
+        public void EndGame()
+        {
+            OverlayColor.Fade(Color.Black, 1, () => Close());
+        }
 
         protected override void Update(TimeSpan delta)
         {
             DebugUpdateText = "";
             DebugMarkers.Clear();
+            OverlayColor.Update(delta);
+
+            if (Resources.LoadingTasksPending > 0 && 
+                OverlayColor.Color == Color.Black)
+            {
+                DebugUpdateText = "Loading...";
+            }
 
             if (InputScheme.FullscreenToggle.IsActivated)
                 Graphics.Mode = Graphics.Mode == WindowMode.Fullscreen ?
                     WindowMode.NormalScalable : WindowMode.Fullscreen;
-            
-            if (InputScheme.Exit.IsActivated) Close();
+
+            if (InputScheme.Exit.IsActivated) EndGame();
 
             if (InputScheme.FilterToggle.IsActivated)
                 gameParameters.Filters.Enabled =
@@ -313,16 +353,27 @@ namespace TrippingCubes
             {
                 cursorPosition = GetCurrentlySelectedVoxel();
 
-                if ((InputScheme.AddBlock.IsActive &&
-                    InputScheme.RemoveBlock.IsActive))
+                if (InputScheme.PickBlock.IsActive &&
+                    World.RootChunk.TraverseToChunk(cursorPosition, true,
+                    out var chunk) &&
+                    chunk.TryGetVoxel(cursorPosition - chunk.Offset,
+                    out var voxel))
+                {
+                    if (voxel.BlockKey != World.Blocks.DefaultBlock.Key)
+                        currentCursorBlockKey = voxel.BlockKey;
+
+                    editTempLock = true;
+                }
+                else if (InputScheme.AddBlock.IsActive &&
+                    InputScheme.RemoveBlock.IsActive)
                     editTempLock = true;
                 else if (InputScheme.AddBlock.IsDeactivated && !editTempLock)
-                    World.SetArea(selectionStart, cursorPosition, 
+                    World.SetArea(selectionStart, cursorPosition,
                         new BlockVoxel(currentCursorBlockKey));
                 else if (InputScheme.RemoveBlock.IsDeactivated && !editTempLock)
-                    World.SetArea(selectionStart, cursorPosition, 
+                    World.SetArea(selectionStart, cursorPosition,
                         new BlockVoxel(0));
-                else if (!(InputScheme.AddBlock.IsActive || 
+                else if (!(InputScheme.AddBlock.IsActive ||
                     InputScheme.RemoveBlock.IsActive))
                 {
                     selectionStart = GetCurrentlySelectedVoxel();

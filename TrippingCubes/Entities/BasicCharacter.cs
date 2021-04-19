@@ -210,6 +210,8 @@ namespace TrippingCubes.Entities
         }
         private int healthPoints = 100;
 
+        public string Name { get; set; } = $"Unnamed{nameof(BasicCharacter)}";
+
         public bool IsInvisible { get; private set; } = false;
 
         public RigidBody Body { get; }

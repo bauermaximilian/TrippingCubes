@@ -71,6 +71,8 @@ namespace TrippingCubes.Entities
 
         public Camera Camera { get; }
 
+        public float FallDeathYTreshold { get; set; } = -20;
+
         public ResourcePath WeaponModelPath
         {
             get => weaponPath;
@@ -112,12 +114,18 @@ namespace TrippingCubes.Entities
                 if (value != healthPoints)
                 {
                     int previousValue = healthPoints;
-                    healthPoints = value;
+                    healthPoints = Math.Min(value, MaximumHealth);
                     HealthPointsChanged?.Invoke(previousValue, healthPoints);
                 }
             }
         }
-        private int healthPoints = 200;
+        private int healthPoints = 100;
+
+        public int MaximumHealth { get; set; } = 150;
+
+        public int DamagePoints { get; set; } = 25;
+
+        public string Name { get; set; } = $"Unnamed{nameof(PlayerCharacter)}";
 
         public string CurrentState
         {
@@ -139,12 +147,19 @@ namespace TrippingCubes.Entities
         public Vector3 Position
         {
             get => Body.Position;
-            set => Body.MoveTo(value);
+            set
+            {
+                Body.MoveTo(value);
+                spawnPoint = value;
+            }
         }
 
         public event ValueChangedEventHandler<int> HealthPointsChanged;
 
         public event ValueChangedEventHandler<string> StateChanged;
+
+        private Vector3 spawnPoint = Vector3.Zero;
+        private int initialHealthPoints = 200;
 
         public PlayerCharacter(GameWorld gameWorld)
         {
@@ -172,6 +187,24 @@ namespace TrippingCubes.Entities
             moveUp = gameWorld.Game.InputScheme.MoveUp;
             moveDown = gameWorld.Game.InputScheme.MoveDown;
             switchInputScheme = gameWorld.Game.InputScheme.SwitchInputScheme;
+
+            HealthPointsChanged += (old, current) =>
+            {
+                if (old < current) 
+                    World.Game.OverlayColor.Clear().Flash(
+                        Color.Green.WithAlpha(0.5f));
+                if (old > current)
+                    World.Game.OverlayColor.Clear().Flash(
+                        Color.Red.WithAlpha(0.5f));
+                if (current == 0)
+                {
+                    World.Game.OverlayColor.Clear().Flash(Color.Black, 1);
+                    HealthPoints = initialHealthPoints;
+                    Position = spawnPoint;
+                }
+            };
+
+            FlyModeEnabled = false;
         }
 
         public static ICharacter Create(GameWorld gameWorld)
@@ -185,13 +218,36 @@ namespace TrippingCubes.Entities
             PrimitiveTypeParser.TryAssign(parameters, this, true);
         }
 
+        private bool loadedOnce = false;
+
         public void Update(TimeSpan delta)
         {
+            if (!loadedOnce && World.Game.Resources.LoadingTasksPending == 0)
+            {
+                loadedOnce = true;
+                WeaponModel.Animation.Animation.Play();
+            }
+
+            if (!loadedOnce) return;
+
             PhysicsHelper.ApplyAccerlationToVelocity(ref rotationDeg,
                 RotationUserInput * LookAccerlationDeg, delta);
             PhysicsHelper.ApplyDragToVelocity(ref rotationDeg,
                 LookDragDeg, delta);
+
             Camera.Rotate(Angle.Deg(rotationDeg.X), Angle.Deg(rotationDeg.Y));
+
+            float cameraX = Angle.Rad(Camera.Orientation.X + Angle.Pi, true);
+            cameraX = Math.Max(cameraX, Angle.Deg(100));
+            cameraX = Math.Min(cameraX, Angle.Deg(260));
+            cameraX = Angle.Rad(cameraX - Angle.Pi, true);
+            Camera.RotateTo(cameraX, Camera.Orientation.Y, 0);
+
+            if (Position.Y < FallDeathYTreshold && HealthPoints > 0 && 
+                !FlyModeEnabled)
+            {
+                HealthPoints = 0;
+            }
 
             if (switchInputScheme.IsActivated) 
                 FlyModeEnabled = !FlyModeEnabled;
@@ -212,19 +268,27 @@ namespace TrippingCubes.Entities
             Camera.MoveTo(Body.BoundingBox.PivotBottom() +
                 new Vector3(0, 1.45f, 0) + headShift);
 
-            TrippingCubesGame.DebugUpdateText += 
-                $"Player: {Body.Position:F2} - {HealthPoints}HP\n";
+            if (FlyModeEnabled)
+            {
+                TrippingCubesGame.DebugUpdateText +=
+                    $"Player: {Body.Position:F2} - {HealthPoints}HP\n";
+            } else
+            {
+                TrippingCubesGame.DebugUpdateText += $"{HealthPoints}HP\n";
+            }
 
             if (WeaponModel != null && !FlyModeEnabled)
             {
                 WeaponModel.Transformation =
                     MathHelper.CreateTransformation(
-                        Body.BoundingBox.PivotBottom(), Vector3.One, 
+                        Body.BoundingBox.PivotBottom(), new Vector3(-1,1,1), 
                         Quaternion.CreateFromYawPitchRoll(
                             Angle.Rad(Camera.Orientation.Y), 0, 0));
                 WeaponModel.Update(delta);
                 WeaponModel.Animation.Animation.SetPlaybackRange(
                     "attack", true);
+
+                bool performAttack = false;
 
                 if ((attack?.IsActivated ?? false) && 
                     (DateTime.Now - lastAttack) > attackFrequency)
@@ -234,9 +298,14 @@ namespace TrippingCubes.Entities
                     WeaponModel.Animation.Animation.Stop();
                     WeaponModel.Animation.Animation.Play();
 
-                    foreach (var entity in World.Entities)
+                    performAttack = true;
+                }
+
+                foreach (var entity in World.Entities)
+                {
+                    if (entity != this)
                     {
-                        if (entity is ICharacter character)
+                        if (performAttack && entity is ICharacter character)
                         {
                             Vector3 direction = Body.Position -
                                 character.Body.Position;
@@ -250,7 +319,16 @@ namespace TrippingCubes.Entities
 
                             if (direction.Length() < 2 && offset.Degrees < 15)
                             {
-                                character.HealthPoints -= 20;
+                                character.HealthPoints -= DamagePoints;
+                            }
+                        }
+
+                        if (entity is Entity typedEntity)
+                        {
+                            if (typedEntity.Body.BoundingBox.IntersectsWith(
+                                Body.BoundingBox))
+                            {
+                                typedEntity.Touched(this);
                             }
                         }
                     }

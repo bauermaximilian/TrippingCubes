@@ -10,6 +10,10 @@ namespace TrippingCubes.Entities
 
         bool IsInvisible { get; }
 
+        string Name { get; }
+
+        string CurrentState { get; }
+
         event ValueChangedEventHandler<int> HealthPointsChanged;
 
         event ValueChangedEventHandler<string> StateChanged;

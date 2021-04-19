@@ -26,8 +26,7 @@ namespace TrippingCubes.World
     class Block
     {
         public static Block Empty { get; }
-            = new Block(new BlockKey(0, 0), "empty", 
-                new BlockProperties(true, 0));
+            = new Block(new BlockKey(0, 0), "empty", BlockProperties.Air);
 
         public string Identifier { get; }
 

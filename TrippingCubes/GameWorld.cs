@@ -29,6 +29,7 @@ using System.Numerics;
 using System.Threading;
 using TrippingCubes.Common;
 using TrippingCubes.Entities;
+using TrippingCubes.Entities.Analytics;
 using TrippingCubes.Physics;
 using TrippingCubes.World;
 
@@ -62,6 +63,9 @@ namespace TrippingCubes
 
         private readonly List<IEntity> entities = new List<IEntity>();
         private readonly ZipFileSystem zipFileSystem;
+
+        private readonly List<CharacterProtocol> characterProtocols =
+            new List<CharacterProtocol>();
 
         public GameWorld(GameWorldConfiguration configuration,
             FileSystemPath worldFilePath, TrippingCubesGame game)
@@ -195,6 +199,13 @@ namespace TrippingCubes
                         IEntity entity = entityConfiguration.Instantiate(this,
                             instantiation.InstanceParameters);
                         entities.Add(entity);
+
+                        if (entity is ICharacter characterEntity &&
+                            !string.IsNullOrWhiteSpace(characterEntity.Name))
+                        {
+                            characterProtocols.Add(new CharacterProtocol(
+                                characterEntity));
+                        }
                     }
                     catch (Exception exc)
                     {
@@ -299,6 +310,19 @@ namespace TrippingCubes
                 Log.Trace("All chunks saved.");
             }
 
+            Log.Trace("Saving analytics...");
+            try
+            {
+                foreach (var protocol in characterProtocols)
+                    protocol.Save(FileSystem, "/Analytics/");
+
+                Log.Trace("Analytics data saved successfully.");
+            }
+            catch (Exception exc)
+            {
+                Log.Error("The analytics data couldn't be saved.", exc);
+            }
+
             skyboxTexture?.Dispose();
             skyboxMesh?.Dispose();
             zipFileSystem?.Dispose();
@@ -380,8 +404,8 @@ namespace TrippingCubes
                     out var voxel, false))
                 {
                     var voxelBlock = Blocks.GetBlock(voxel.BlockKey);
-                    bool isSolid = !voxelBlock.Properties.IsTranslucent;
-                    return isSolid;
+                    return voxelBlock.Properties.Type ==
+                        BlockColliderType.Solid;
                 }
                 else return false;
             }

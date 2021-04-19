@@ -180,7 +180,8 @@ namespace TrippingCubes.Entities
             set => Behaviors.PathFollow.Path = value;
         }
 
-        public string Name { get; set; } = "Unnamed Character";
+        public string Name { get; set; } = 
+            $"Unnamed{nameof(AdvancedCharacter)}";
 
         public Model CharacterModel { get; private set; }
 
@@ -408,7 +409,6 @@ namespace TrippingCubes.Entities
         {
             Vector3 directionToTarget = PlayerPosition.Value - Position;
             float distanceToTarget = directionToTarget.Length();
-            bool targetInSight = CheckPlayerInSight();
             Angle orientationOffsetToTarget =
                     MathHelper.CalculateOrientationDifference(
                     MathHelper.CreateOrientationY(directionToTarget),
@@ -423,7 +423,7 @@ namespace TrippingCubes.Entities
                 PlayerPosition;
 
             if (distanceToTarget < Behaviors.Arrive.ArrivalRadius
-                && targetInSight)
+                && CheckPlayerInSight())
             {
                 if (distanceToTarget < AttackTypeMeleeArrivalRadius)
                 {
