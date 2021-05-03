@@ -233,19 +233,22 @@ namespace TrippingCubes.Physics
                 TryAutoJumping(boundingBox, dx);
             }
 
-            // HACK: If there's a collision with any other entity in the world
-            // (checked via bounding box X/Z), reset the bounding box to the
-            // previous one. Very dirty and time-consuming. Pfui.
-            foreach (RigidBody body in World.Bodies)
+            if (!DoesNotCollideWithOtherObjects)
             {
-                if (body == this || body.DoesNotCollideWithOtherObjects) 
-                    continue;
-
-                if (boundingBox.IntersectsWith(body.boundingBox))
+                // HACK: If there's a collision with any other entity in the
+                // world (checked via bounding box X/Z), reset the bounding box
+                // to the previous one. Very dirty and time-consuming. Pfui.
+                foreach (RigidBody body in World.Bodies)
                 {
-                    boundingBox = previousBoundingBox;
-                    velocity *= 0.25f;
-                    break;
+                    if (body == this || body.DoesNotCollideWithOtherObjects)
+                        continue;
+
+                    if (boundingBox.IntersectsWith(body.boundingBox))
+                    {
+                        boundingBox = previousBoundingBox;
+                        velocity *= 0.5f;
+                        break;
+                    }
                 }
             }
 

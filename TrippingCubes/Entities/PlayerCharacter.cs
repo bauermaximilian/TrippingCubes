@@ -58,6 +58,7 @@ namespace TrippingCubes.Entities
         private readonly ControlMapping moveUp;
         private readonly ControlMapping moveDown;
         private readonly ControlMapping switchInputScheme;
+        private readonly ControlMapping debugTrigger1;
 
         protected virtual Vector2 RotationUserInput => new Vector2(
             (lookDown?.Value ?? 0) - (lookUp?.Value ?? 0),
@@ -170,6 +171,7 @@ namespace TrippingCubes.Entities
                 new BoundingBox(0, 0, 0, 0.6f, 1.6f, 0.6f));
             Body.GravityMultiplier = 0;
             Body.EnableAutoJump = false;
+            Body.DoesNotCollideWithOtherObjects = true;
 
             Body.AutoJump += (s,e)=> 
                 Body.ApplyVelocityChange(new Vector3(0, JumpVelocity, 0));
@@ -187,6 +189,7 @@ namespace TrippingCubes.Entities
             moveUp = gameWorld.Game.InputScheme.MoveUp;
             moveDown = gameWorld.Game.InputScheme.MoveDown;
             switchInputScheme = gameWorld.Game.InputScheme.SwitchInputScheme;
+            debugTrigger1 = gameWorld.Game.InputScheme.DebugTrigger1;
 
             HealthPointsChanged += (old, current) =>
             {
@@ -204,7 +207,7 @@ namespace TrippingCubes.Entities
                 }
             };
 
-            FlyModeEnabled = false;
+            FlyModeEnabled = World.Game.CreatorMode;
         }
 
         public static ICharacter Create(GameWorld gameWorld)
@@ -249,7 +252,12 @@ namespace TrippingCubes.Entities
                 HealthPoints = 0;
             }
 
-            if (switchInputScheme.IsActivated) 
+            if (World.Game.CreatorMode && debugTrigger1.IsActivated) 
+                Log.Trace($"<Position>{Body.Position.X:F1}," +
+                    $"{(Body.Position.Y + 1):F1},{Body.Position.Z:F1}" +
+                    $"</Position>");
+
+            if (World.Game.CreatorMode && switchInputScheme.IsActivated) 
                 FlyModeEnabled = !FlyModeEnabled;
 
             if (FlyModeEnabled)

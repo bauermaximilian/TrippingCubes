@@ -10,7 +10,7 @@ namespace TrippingCubes.Entities.Behaviors
 
         public PathLinear Path { get; set; }
 
-        public float PathMovingOffset { get; set; } = 1.420f;
+        public float PathMovingOffset { get; set; } = 0.420f;
 
         private float pathOffset = 0;
 
@@ -25,10 +25,9 @@ namespace TrippingCubes.Entities.Behaviors
             {
                 Vector3 predictedPosition = Self.Body.Position +
                         Self.Body.Velocity * (float)PredictTime.TotalSeconds;
-                pathOffset = Path.GetOffset(predictedPosition, pathOffset);
-
-                float targetPathOffset = pathOffset + PathMovingOffset;
-                Vector3 target = Path.GetPosition(targetPathOffset);
+                pathOffset = Path.GetOffset(predictedPosition, pathOffset) 
+                    + PathMovingOffset;
+                Vector3 target = Path.GetPosition(pathOffset);
 
                 return Vector3.Normalize((target - Self.Body.Position)
                     * ClearAxisY) * MaximumAccelerationLinear;

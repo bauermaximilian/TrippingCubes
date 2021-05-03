@@ -28,6 +28,11 @@ using System.Numerics;
 using TrippingCubes.World;
 using System.Collections.Generic;
 using static ShamanTK.Graphics.RenderParameters;
+using System.Threading;
+using System.Globalization;
+using System.Threading.Tasks;
+using TrippingAnalytics.Core.Networking;
+using TrippingAnalytics.Core.Common;
 
 namespace TrippingCubes
 {
@@ -69,27 +74,174 @@ namespace TrippingCubes
 
         internal ModelCache Models { get; private set; }
 
+        internal SessionProtocol Protocol { get; } = new SessionProtocol
+        {
+            Time = DateTime.Now,
+            CharacterProtocols = new List<CharacterProtocol>(),
+            ProgramLog = new List<ProgramLogItem>()
+        };
+
+        internal bool ReachedGoal { get; private set; } = false;
+
+        internal bool CreatorMode { get; }
+
         private readonly FileSystemPath worldConfigurationPath =
             "/Worlds/Default.xml";
 
+#if DEBUG
+        private const string ApiUrl = "http://127.0.0.1:5000/api/analytics";
+#else
+        private const string ApiUrl = ApiClient.DefaultApiUrl;
+#endif
+
+        private const string FirstTestWorldConfigurationPath =
+            "/Worlds/First.xml";
+        private const string SecondTestWorldConfigurationPath =
+            "/Worlds/Second.xml";
+
+        private const string FlagConfiguration = "configuration:";
+        private const string FlagAnalytics = "analytics:";
+        private const string FlagCreatorMode = "creator";
+
+        private const int ReturnCodeSuccess = 0;
+        private const int ReturnCodeTokenError = -1;
+        private const int ReturnCodeApiErrorBeginning = -2;
+        private const int ReturnCodeApiErrorEnd = -3;
+        private const int ReturnCodeGameEndedTooSoon = -4;
+
         public AnimatedColor OverlayColor { get; } = new AnimatedColor();
 
-        public static void Main(string[] args)
+        public static async Task<int> Main(string[] args)
         {
             Log.UseEnglishExceptionMessages = true;
-            Log.MessageLogged += (s, e) =>
-                Console.WriteLine(e.ToString(Console.BufferWidth - 2));
-            TrippingCubesGame game = new TrippingCubesGame(
-                args.Length > 0 ? args[0] : null);
+            bool consoleAvailable = TryAddConsoleLogOutput();
+
+            bool creatorMode = false;
+            string configurationPath = null;
+            string analyticsToken = null;
+            int analyticsSessionId = -1;
+
+            foreach (string argument in args)
+            {
+                string arg = argument.Trim(' ', '/').ToLowerInvariant();
+
+                if (arg.StartsWith(FlagConfiguration))
+                    configurationPath = arg.Replace(FlagConfiguration, "");
+                else if (arg.Equals(FlagCreatorMode,
+                    StringComparison.InvariantCultureIgnoreCase))
+                    creatorMode = true;
+                else if (arg.StartsWith(FlagAnalytics) &&
+                    analyticsToken == null)
+                {
+                    analyticsToken = arg.Replace(FlagAnalytics, "");
+
+                    try
+                    {
+                        analyticsSessionId = await GetAnalyticsSessionIdAsync(
+                            analyticsToken);
+                    }
+                    catch (Exception exc)
+                    {
+                        if (exc.InnerException is InvalidOperationException)
+                            return ReturnCodeTokenError;
+                        else return ReturnCodeApiErrorBeginning;
+                    }
+
+                    if (analyticsSessionId == 0)
+                        configurationPath = FirstTestWorldConfigurationPath;
+                    else if (analyticsSessionId == 1)
+                        configurationPath = SecondTestWorldConfigurationPath;
+                    else return ReturnCodeTokenError;
+                }
+            }
+
+            TrippingCubesGame game = new TrippingCubesGame(configurationPath,
+                creatorMode);
+
+            DateTime startGameTime = DateTime.Now;
             game.Run(new ShamanTK.Platforms.DesktopGL.PlatformProvider(),
                 FileSystem.ProgramDataWritable);
+            if ((DateTime.Now - startGameTime) < TimeSpan.FromSeconds(10))
+                return ReturnCodeGameEndedTooSoon;
 
-            if (Log.HighestLogMessageLevel >= Log.MessageLevel.Error)
-                Console.ReadKey(true);
+            try
+            {
+                if (analyticsToken != null && analyticsSessionId >= 0 &&
+                    game.ReachedGoal)
+                {
+                    Log.Trace("Sending analytics data...");
+                    ApiClient api = new ApiClient(ApiUrl);
+                    await api.PostSessionProtocol(analyticsToken,
+                        game.Protocol, analyticsSessionId);
+                    Log.Trace("Analytics data sent.");
+                }
+            }
+            catch
+            {
+                return ReturnCodeApiErrorEnd;
+            }
+
+            if (consoleAvailable)
+            {
+                if (Log.HighestLogMessageLevel >= Log.MessageLevel.Error)
+                    Console.ReadKey(true);
+            }
+
+            return ReturnCodeSuccess;
         }
 
-        public TrippingCubesGame(string worldConfigurationPath)
+        private static async Task<int> GetAnalyticsSessionIdAsync(
+            string token)
         {
+            ApiClient api = new ApiClient(ApiUrl);
+            AnalyticsUserStatusDetails status;
+            try
+            {
+                status = await api.GetStatus(token);
+                if (!status.HasFirstProtocol)
+                    return 0;
+                else if (!status.HasSecondProtocol)
+                    return 1;
+                else throw new InvalidOperationException("The token has " +
+                    "already been used successfully for both playtests and " +
+                    "can't be used again.");
+            }
+            catch (Exception exc)
+            {
+                throw new Exception("The ID for the playtest session " +
+                    "couldn't be retrieved.", exc);
+            }
+        }
+
+        private static bool TryAddConsoleLogOutput()
+        {
+            try
+            {
+                int height = Console.WindowHeight;
+                Log.MessageLogged += (s, e) =>
+                    Console.WriteLine(e.ToString(Console.BufferWidth - 2));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public TrippingCubesGame(string worldConfigurationPath, 
+            bool creatorMode)
+        {
+            this.CreatorMode = creatorMode;
+
+            Log.MessageLogged += (s, e) =>
+                Protocol.ProgramLog.Add(new ProgramLogItem
+                {
+                    Time = e.Time,
+                    Message = e.ToString()
+                });
+
+            if (creatorMode) Log.Trace("Creator mode enabled.");
+
             if (!string.IsNullOrWhiteSpace(worldConfigurationPath))
             {
                 try
@@ -111,6 +263,11 @@ namespace TrippingCubes
 
         protected override void Load()
         {
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+
+            Graphics.Mode = CreatorMode ? WindowMode.NormalScalable :
+                WindowMode.Fullscreen;
+
             OverlayColor.Clear(Color.Black);
 
             InputScheme = new InputScheme(Controls);
@@ -206,6 +363,7 @@ namespace TrippingCubes
                 if (gameConsole == null)
                 {
                     gameConsole = new GameConsole(plane, font, Controls);
+                    gameConsole.Enabled = CreatorMode;
                     gameConsole.CommandIssued += GameConsole_CommandIssued;
                     gameConsole.AppendOutputText("Hello there! Enter '?' to " +
                         "list all available blocks.\nEnter the name of the " +
@@ -312,9 +470,11 @@ namespace TrippingCubes
                 1);
         }
 
-        public void EndGame()
+        public void EndGame(bool reachedGoal)
         {
             OverlayColor.Fade(Color.Black, 1, () => Close());
+            OverlayColor.IsBlocked = true;
+            ReachedGoal = reachedGoal;
         }
 
         protected override void Update(TimeSpan delta)
@@ -333,7 +493,7 @@ namespace TrippingCubes
                 Graphics.Mode = Graphics.Mode == WindowMode.Fullscreen ?
                     WindowMode.NormalScalable : WindowMode.Fullscreen;
 
-            if (InputScheme.Exit.IsActivated) EndGame();
+            if (InputScheme.Exit.IsActivated) EndGame(false);
 
             if (InputScheme.FilterToggle.IsActivated)
                 gameParameters.Filters.Enabled =

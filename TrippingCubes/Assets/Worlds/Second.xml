@@ -30,7 +30,6 @@
 			<IsSolid>false</IsSolid>
 			<OnTouch>Powerup</OnTouch>
 		</HealthItem>
-		<!--BasicCharacter AdvancedCharacter-->
 		<Enemy Type="TrippingCubes.Entities.AdvancedCharacter">
 			<CharacterModelPath>/Models/testcharacter.glb?modelNode=character</CharacterModelPath>
 			<CharacterWeaponPath>/Models/testcharacter.glb?modelNode=sword</CharacterWeaponPath>

@@ -77,6 +77,8 @@ namespace TrippingCubes
             }
         }
 
+        public bool Enabled { get; set; } = true;
+
         private Color foregroundColor = Color.White;
 
         private SpriteText inputSpriteText = null;
@@ -254,7 +256,7 @@ namespace TrippingCubes
 
         public void Update(TimeSpan delta)
         {
-            if (IsDisposed) return;
+            if (IsDisposed || !Enabled) return;
 
             if (HasFocus)
             {

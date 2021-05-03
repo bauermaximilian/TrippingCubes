@@ -45,6 +45,12 @@ namespace TrippingCubes.Entities
             set => Body.MoveTo(value);
         }
 
+        public float OrientationDegrees
+        {
+            get => Body.Orientation.Degrees;
+            set => Body.Orientation = Angle.Deg(value, true);
+        }
+
         public string Animation
         {
             get => animation;
@@ -118,7 +124,7 @@ namespace TrippingCubes.Entities
             else if (OnTouch.Equals("Win",
                 StringComparison.InvariantCultureIgnoreCase))
             {
-                World.Game.EndGame();
+                World.Game.EndGame(true);
                 IsActive = false;
             }
         }

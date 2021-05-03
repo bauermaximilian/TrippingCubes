@@ -12,7 +12,6 @@ using WPP =
 using ShamanTK.Common;
 using ShamanTK.IO;
 using ShamanTK;
-using TrippingCubes.Entities.Analytics;
 
 namespace TrippingCubes.Entities
 {
@@ -109,7 +108,7 @@ namespace TrippingCubes.Entities
                 }
             }
         }
-        private int healthPoints = 100;
+        private int healthPoints = 80;
 
         public bool IsInvisible { get; private set; } = false;
 
@@ -197,7 +196,7 @@ namespace TrippingCubes.Entities
 
         public Angle FieldOfVision { get; set; } = Angle.Deg(180);
 
-        public float SightDistance { get; set; } = 15;
+        public float SightDistance { get; set; } = 12;
 
         protected Vector3? AssumedPlayerPosition { get; set; }
 
@@ -224,9 +223,9 @@ namespace TrippingCubes.Entities
         }
         private ICharacter player;
 
-        public float AttackTypeMeleeArrivalRadius { get; set; } = 2.40f;
+        public float AttackTypeMeleeArrivalRadius { get; set; } = 3.25f;
 
-        public float AttackTypeRangeArrivalRadius { get; set; } = 9.60f;
+        public float AttackTypeRangeArrivalRadius { get; set; } = 9.25f;
 
         public bool PreferMeleeAttack
         {
@@ -244,7 +243,7 @@ namespace TrippingCubes.Entities
                 }
 
                 Behaviors.Arrive.ArrivalRadius =
-                    Behaviors.Arrive.DecelerateRadius * 0.69f;
+                    Behaviors.Arrive.DecelerateRadius - 2;
             }
         }
 
@@ -253,7 +252,7 @@ namespace TrippingCubes.Entities
             get => meleeDamageFrequency.TotalSeconds;
             set => meleeDamageFrequency = TimeSpan.FromSeconds(value);
         }
-        private TimeSpan meleeDamageFrequency = TimeSpan.FromSeconds(1);
+        private TimeSpan meleeDamageFrequency = TimeSpan.FromSeconds(1.5f);
 
         public int MeleeDamage { get; set; } = 5;
 
@@ -262,9 +261,39 @@ namespace TrippingCubes.Entities
             get => rangeDamageFrequency.TotalSeconds;
             set => rangeDamageFrequency = TimeSpan.FromSeconds(value);
         }
-        private TimeSpan rangeDamageFrequency = TimeSpan.FromSeconds(1.5);
+        private TimeSpan rangeDamageFrequency = TimeSpan.FromSeconds(1.5f);
 
         public int RangeDamage { get; set; } = 2;
+
+        public float DamageInflictIntervalSeconds
+        {
+            set => MeleeDamageFrequencySeconds = 
+                RangeDamageFrequencySeconds = value;
+        }
+
+        public bool EnableWander
+        {
+            get => Behaviors.Wander.Parameters.Weight > 0;
+            set
+            {
+                if (value)
+                {
+                    Behaviors.Wander.Parameters = new WPP(1, 0.24f);
+                    Behaviors.Erratic.Parameters = new WPP(4, 1f);
+                }
+                else
+                {
+                    Behaviors.Wander.Parameters = new WPP(1, 0);
+                    Behaviors.Erratic.Parameters = new WPP(4, 0);
+                }
+            }
+        }
+
+        public float OrientationDegrees
+        {
+            get => Body.Orientation.Degrees;
+            set => Body.Orientation = Angle.Deg(value, true);
+        }
 
         public Vector3 ShootingOriginOffset { get; set; } =
             new Vector3(-0.025f, 0.78f, 0);

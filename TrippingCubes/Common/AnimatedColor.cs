@@ -23,6 +23,8 @@ namespace TrippingCubes.Common
 
         public int QueuedTransitions => transitions.Count;
 
+        public bool IsBlocked { get; set; } = false;
+
         public void Update(TimeSpan delta)
         {
             if (currentTransition != null)
@@ -49,28 +51,38 @@ namespace TrippingCubes.Common
 
         public AnimatedColor Clear(Color color)
         {
-            Color = color;
-            return Clear();
+            if (!IsBlocked)
+            {
+                Color = color;
+                return Clear();
+            }
+            else return this;
         }
 
         public AnimatedColor Clear()
         {
-            transitions.Clear();
-            currentTransition = null;
-            currentTransitionProgress = TimeSpan.Zero;
+            if (!IsBlocked)
+            {
+                transitions.Clear();
+                currentTransition = null;
+                currentTransitionProgress = TimeSpan.Zero;
+            }
             return this;
         }
 
         public AnimatedColor Flash(Color color, double durationSeconds = 1, 
             Action onCompleted = null)
         {
-            transitions.Enqueue(new Transition()
+            if (!IsBlocked)
             {
-                CompletionAction = onCompleted,
-                Duration = TimeSpan.FromSeconds(durationSeconds),
-                Source = color,
-                Target = Color.Transparent           
-            });
+                transitions.Enqueue(new Transition()
+                {
+                    CompletionAction = onCompleted,
+                    Duration = TimeSpan.FromSeconds(durationSeconds),
+                    Source = color,
+                    Target = Color.Transparent
+                });
+            }
 
             return this;
         }
@@ -78,13 +90,16 @@ namespace TrippingCubes.Common
         public AnimatedColor Fade(Color color, double durationSeconds = 1,
             Action onCompleted = null)
         {
-            transitions.Enqueue(new Transition()
+            if (!IsBlocked)
             {
-                CompletionAction = onCompleted,
-                Duration = TimeSpan.FromSeconds(durationSeconds),
-                Source = Color,
-                Target = color
-            });
+                transitions.Enqueue(new Transition()
+                {
+                    CompletionAction = onCompleted,
+                    Duration = TimeSpan.FromSeconds(durationSeconds),
+                    Source = Color,
+                    Target = color
+                });
+            }
 
             return this;
         }

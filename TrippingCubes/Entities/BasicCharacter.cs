@@ -9,7 +9,6 @@ using ShamanTK;
 using System.Linq;
 using System.Collections.Generic;
 using ShamanTK.Graphics;
-using System.Reflection;
 
 namespace TrippingCubes.Entities
 {
@@ -64,7 +63,8 @@ namespace TrippingCubes.Entities
 
         public Vector3 LastKnownPlayerPosition { get; private set; }
 
-        public bool LastKnownPlayerPositionArrivedOnce { get; private set; }
+        public bool LastKnownPlayerPositionArrivedOnce { get; private set; } 
+            = true;
 
         public Angle OrientationOffsetToTarget { get; private set; }
             = Angle.MaximumNormalized;
@@ -96,19 +96,26 @@ namespace TrippingCubes.Entities
 
         public float AttackTypeRangeArrivalRadius { get; set; } = 9.25f;
 
-        public int DamageInflictAmountMelee { get; set; } = 10;
+        public int MeleeDamage { get; set; } = 5;
 
-        public int DamageInflictAmountRange { get; set; } = 2;
+        public int RangeDamage { get; set; } = 2;
 
         public float MeleeAttackDistanceLimit { get; set; } = 2;
 
-        public float SightDistanceLimit { get; set; } = 12;
+        public float SightDistance { get; set; } = 12;
+
+        public Angle FieldOfVision { get; set; } = Angle.Deg(180);
 
         public TimeSpan KnowledgeUpdateFrequency { get; set; }
-            = TimeSpan.FromSeconds(0.5);
+            = TimeSpan.FromSeconds(0.1);
+
+        public float DamageInflictIntervalSeconds
+        {
+            set => DamageInflictInterval = TimeSpan.FromSeconds(value);
+        }
 
         public TimeSpan DamageInflictInterval { get; set; }
-            = TimeSpan.FromSeconds(2);
+            = TimeSpan.FromSeconds(1.5f);
 
         public float MaximumAccelerationLinear
         {
@@ -140,6 +147,11 @@ namespace TrippingCubes.Entities
                 Arrive.ArrivalRadius = Arrive.DecelerateRadius - 2;
             }
         }
+
+        public bool EnableWander { get; set; } = true;
+
+        public string PatrolPathName { get; set; } // Unused
+
         #endregion
 
         #region Visual representation parameters
@@ -181,11 +193,28 @@ namespace TrippingCubes.Entities
         }
         private ResourcePath characterWeaponPath = ResourcePath.Empty;
 
+        public Vector3 ShootingOriginOffset { get; set; } =
+            new Vector3(-0.025f, 0.78f, 0);
+
+        public Vector3 ShootingRayScale { get; set; } =
+            new Vector3(0.05f, 0.05f, 9.25f);
+
+        private MeshBuffer shootingRay;
+
+        private DateTime lastDamageReceiveTime;
+        private bool lastDamageDealAttemptWasRange = false;
+
         public Model CharacterModel { get; private set; }
 
         public Model WeaponModel { get; private set; }
 
-        public Vector3 ModelSize { get; set; } = new Vector3(0.9f);
+        public Vector3 Scale { get; set; } = new Vector3(0.9f);
+
+        public float OrientationDegrees
+        {
+            get => Body.Orientation.Degrees;
+            set => Body.Orientation = Angle.Deg(value, true);
+        }
 
         public Vector3 Position
         {
@@ -208,7 +237,7 @@ namespace TrippingCubes.Entities
                 }
             }
         }
-        private int healthPoints = 100;
+        private int healthPoints = 80;
 
         public string Name { get; set; } = $"Unnamed{nameof(BasicCharacter)}";
 
@@ -232,6 +261,7 @@ namespace TrippingCubes.Entities
             Body.EnableAutoJump = true;
             Body.AutoJump += (s, e) =>
                 Body.ApplyVelocityChange(new Vector3(0, JumpVelocity, 0));
+            //Body.DoesNotCollideWithOtherObjects = true;
 
             Align = new AlignTargetBehavior<WeightParameter>(this);
             Arrive = new ArriveBehavior<WeightParameter>(this);
@@ -241,6 +271,16 @@ namespace TrippingCubes.Entities
             {
                 Align, Arrive, Wander
             };
+
+            gameWorld.Game.Resources.LoadMesh(MeshData.Block).Subscribe(
+                r => shootingRay = r);
+
+            HealthPointsChanged += OnHealthPointsChanged;
+        }
+
+        private void OnHealthPointsChanged(int previousValue, int currentValue)
+        {
+            lastDamageReceiveTime = DateTime.Now;
         }
 
         public static ICharacter Create(GameWorld gameWorld)
@@ -275,23 +315,49 @@ namespace TrippingCubes.Entities
             Body.ApplyAngularAcceleration(accelerationAngular);
 
             CharacterModel.Transformation = WeaponModel.Transformation =
-                MathHelper.CreateTransformation(Body.Position, ModelSize,
+                MathHelper.CreateTransformation(Body.Position, Scale,
                 Quaternion.CreateFromYawPitchRoll(Body.Orientation, 0, 0));
             CharacterModel.Update(delta);
             WeaponModel.Update(delta);
         }
 
-        public void Redraw(IRenderContext context)
+        public void Redraw(IRenderContext c)
         {
-            CharacterModel?.Draw(context);
-            WeaponModel?.Draw(context);
+            float damageDelta =
+                (float)(DateTime.Now - lastDamageReceiveTime).TotalSeconds;
+            float flickeringVisualIntensity = new Random().Next(
+                (int)Math.Min(100, (damageDelta * 150)), 100) / 100f;
+
+            c.Opacity = flickeringVisualIntensity;
+
+            CharacterModel?.Draw(c);
+            WeaponModel?.Draw(c);
+
+            float shootDelta =
+                (float)(DateTime.Now - lastDamageInflict).TotalSeconds;
+            float shootVisualIntensity = Math.Max(0, Math.Min(1,
+                (float)Math.Log2(shootDelta / 0.6) / (-2) + 0.1f));
+
+            if (lastDamageDealAttemptWasRange && shootVisualIntensity > 0.01f)
+            {
+                c.Mesh = shootingRay;
+                c.Texture = null;
+                c.Color = new Color(Color.Red * shootVisualIntensity);
+                c.Opacity = shootVisualIntensity;
+                c.Transformation = MathHelper.CreateTransformation(
+                    Position + ShootingOriginOffset,
+                    ShootingRayScale,
+                    Quaternion.CreateFromYawPitchRoll(Body.Orientation,
+                    Angle.Deg(-6.9f), 0));
+                c.Draw();
+            }
         }
 
         protected virtual void FindAndExecuteDecision()
         {
-            if (Player.IsInvisible)
+            if (Player.IsInvisible && HealthPoints > 0)
             {
-                PerformWanderIdle();
+                PerformPatrol();
             }
             else
             {
@@ -302,7 +368,7 @@ namespace TrippingCubes.Entities
                         if (LastKnownPlayerPositionArrivedOnce)
                         {
                             if ((Player.Body.Position - Body.Position).Length()
-                                < MeleeAttackDistanceLimit)
+                                < AttackTypeMeleeArrivalRadius)
                             {
                                 PerformAttackMelee();
                             }
@@ -313,18 +379,18 @@ namespace TrippingCubes.Entities
                         }
                         else
                         {
-                            PerformArriveTargetPosition();
+                            PerformPursue();
                         }
                     }
                     else
                     {
                         if (LastKnownPlayerPositionArrivedOnce)
                         {
-                            PerformWanderIdle();
+                            PerformPatrol();
                         }
                         else
                         {
-                            PerformArriveTargetPosition();
+                            PerformPursue();
                         }
                     }
                 }
@@ -339,7 +405,7 @@ namespace TrippingCubes.Entities
         {
             if (Player?.IsInvisible ?? false)
             {
-                PerformWanderIdle();
+                PerformPatrol();
             }
             else
             {
@@ -348,7 +414,7 @@ namespace TrippingCubes.Entities
                     if (PlayerInSight)
                     {
                         if ((Body.Position - Player.Body.Position).Length()
-                            <= Arrive.ArrivalRadius)
+                            <= Arrive.DecelerateRadius)
                         {
                             if ((Player.Body.Position - Body.Position).Length()
                                 < MeleeAttackDistanceLimit)
@@ -362,12 +428,12 @@ namespace TrippingCubes.Entities
                         }
                         else
                         {
-                            PerformArriveTargetPosition();
+                            PerformPursue();
                         }
                     }
                     else
                     {
-                        PerformWanderIdle();
+                        PerformPatrol();
                     }
                 }
                 else
@@ -389,7 +455,7 @@ namespace TrippingCubes.Entities
                 Arrive.ArrivalRadius;
 
             if (!Player.IsInvisible &&
-                raycastDirection.Length() < SightDistanceLimit &&
+                raycastDirection.Length() < SightDistance &&
                 !World.Physics.RaycastVolumetric(raycastBox, raycastDirection,
                 out _, out _))
             {
@@ -400,7 +466,7 @@ namespace TrippingCubes.Entities
                     MathHelper.CreateOrientationY(raycastDirection),
                     Body.Orientation, true);
 
-                PlayerInSight = OrientationOffsetToTarget.Degrees < 120;
+                PlayerInSight = OrientationOffsetToTarget < FieldOfVision;
 
                 if (PlayerInSight)
                 {
@@ -467,16 +533,16 @@ namespace TrippingCubes.Entities
             }
         }
 
-        protected virtual void PerformWanderIdle()
+        protected virtual void PerformPatrol()
         {
-            CurrentState = nameof(PerformWanderIdle);
+            CurrentState = nameof(PerformPatrol);
 
             Align.TargetPosition = Arrive.TargetPosition = 
                 Player.Body.Position;
 
             Align.Parameters = new WeightParameter(0);
             Arrive.Parameters = new WeightParameter(0);
-            Wander.Parameters = new WeightParameter(1);
+            Wander.Parameters = new WeightParameter(EnableWander ? 1 : 0);
 
             Wander.MaximumAccelerationLinear = 2.4f;
 
@@ -512,7 +578,7 @@ namespace TrippingCubes.Entities
 
             Align.Parameters = new WeightParameter(0.2f);
             Arrive.Parameters = new WeightParameter(0.1f);
-            Wander.Parameters = new WeightParameter(1);
+            Wander.Parameters = new WeightParameter(EnableWander ? 1 : 0);
 
             Wander.MaximumAccelerationLinear = 3.5f;
 
@@ -520,19 +586,22 @@ namespace TrippingCubes.Entities
                 true, Body.Velocity.Length() / MaximumSpeed);
         }
 
-        protected virtual void PerformArriveTargetPosition()
+        protected virtual void PerformPursue()
         {
-            CurrentState = nameof(PerformArriveTargetPosition);
+            CurrentState = nameof(PerformPursue);
 
             Align.TargetPosition = Arrive.TargetPosition =
                 LastKnownPlayerPosition;
 
             Align.Parameters = new WeightParameter(1);
             Arrive.Parameters = new WeightParameter(1);
+            Wander.Parameters = new WeightParameter(0);
 
+            /*
             if (Body.Resting.X != 0 || Body.Resting.Z != 0) 
                 Wander.Parameters = new WeightParameter(2f);
             else Wander.Parameters = new WeightParameter(0.1f);
+            */
 
             Wander.MaximumAccelerationLinear = 3.5f;
 
@@ -542,7 +611,8 @@ namespace TrippingCubes.Entities
 
         protected virtual void PerformAttackMelee()
         {
-            CurrentState = nameof(PerformAttackMelee);
+            CurrentState = "PerformAttack";
+            //CurrentState = nameof(PerformAttackMelee);
 
             Align.TargetPosition = Arrive.TargetPosition =
                 LastKnownPlayerPosition;
@@ -556,20 +626,25 @@ namespace TrippingCubes.Entities
             SetCurrentAnimations(AnimationNameAttack, AnimationNameRunning,
                 true, Body.Velocity.Length() / MaximumSpeed);
 
+            Vector3 directionToTarget = Player.Body.Position - Position;
+            float distanceToTarget = directionToTarget.Length();
+
             if ((DateTime.Now - lastDamageInflict) > DamageInflictInterval)
             {
-                if (OrientationOffsetToTarget.Degrees < 25)
+                if (OrientationOffsetToTarget.Degrees < 25 &&
+                    distanceToTarget < MeleeAttackDistanceLimit)
                 {
-                    Player.HealthPoints = Math.Max(0,
-                        Player.HealthPoints - DamageInflictAmountMelee);
+                    Player.HealthPoints -= MeleeDamage;
                 }                
                 lastDamageInflict = DateTime.Now;
+                lastDamageDealAttemptWasRange = false;
             }
         }
 
         protected virtual void PerformAttackRange()
         {
-            CurrentState = nameof(PerformAttackRange);
+            CurrentState = "PerformAttack";
+            //CurrentState = nameof(PerformAttackRange);
 
             Align.TargetPosition = Arrive.TargetPosition =
                 LastKnownPlayerPosition;
@@ -588,9 +663,10 @@ namespace TrippingCubes.Entities
                 if (OrientationOffsetToTarget.Degrees < 15)
                 {
                     Player.HealthPoints = Math.Max(0,
-                        Player.HealthPoints - DamageInflictAmountRange);
+                        Player.HealthPoints - RangeDamage);
                 }
                 lastDamageInflict = DateTime.Now;
+                lastDamageDealAttemptWasRange = true;
             }
         }
     }

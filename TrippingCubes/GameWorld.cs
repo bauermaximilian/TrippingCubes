@@ -29,7 +29,6 @@ using System.Numerics;
 using System.Threading;
 using TrippingCubes.Common;
 using TrippingCubes.Entities;
-using TrippingCubes.Entities.Analytics;
 using TrippingCubes.Physics;
 using TrippingCubes.World;
 
@@ -58,14 +57,11 @@ namespace TrippingCubes
         private IFileSystem FileSystem => Game.Resources.FileSystem;
 
         private MeshBuffer skyboxMesh;
-        private TextureBuffer skyboxTexture;
+        private TextureBuffer innerSkyboxTexture, skyboxTexture;
         private bool isDisposed;
 
         private readonly List<IEntity> entities = new List<IEntity>();
         private readonly ZipFileSystem zipFileSystem;
-
-        private readonly List<CharacterProtocol> characterProtocols =
-            new List<CharacterProtocol>();
 
         public GameWorld(GameWorldConfiguration configuration,
             FileSystemPath worldFilePath, TrippingCubesGame game)
@@ -89,6 +85,10 @@ namespace TrippingCubes
                 Game.Resources.LoadTexture(configuration.SkyboxPath,
                     TextureFilter.Linear).Subscribe(
                     r => skyboxTexture = r);
+                if (!configuration.InnerSkyboxPath.IsEmpty)
+                    Game.Resources.LoadTexture(configuration.InnerSkyboxPath,
+                        TextureFilter.Linear).Subscribe(
+                        r => innerSkyboxTexture = r);
             }
             catch (Exception exc)
             {
@@ -203,8 +203,10 @@ namespace TrippingCubes
                         if (entity is ICharacter characterEntity &&
                             !string.IsNullOrWhiteSpace(characterEntity.Name))
                         {
-                            characterProtocols.Add(new CharacterProtocol(
-                                characterEntity));
+                            CharacterLogger logger = 
+                                CharacterLogger.Create(characterEntity);
+                            Game.Protocol.CharacterProtocols.Add(
+                                logger.Protocol);
                         }
                     }
                     catch (Exception exc)
@@ -224,23 +226,25 @@ namespace TrippingCubes
         {
             context.Mesh = skyboxMesh;
 
-            /*
-            // Former "outer" skybox
-            context.Texture = skyboxTextureOuter;
-            context.Transformation = MathHelper.CreateTransformation(
-                Game.Camera.Position,
-                new Vector3(Game.Camera.ClippingRange.Y - 100),
-                Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
-            context.Draw();
-            */
-
             context.Texture = skyboxTexture;
             context.Transformation = MathHelper.CreateTransformation(
                 Game.Camera.Position, new Vector3((
-                Game.Camera.ClippingRange.Y - 100) * 0.65f),
+                    Game.Camera.ClippingRange.Y - 100) * 1f),
                 Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
-            context.Opacity = MathHelper.CalculateTimeSine(0.5, 0.05) + 0.95f;
             context.Draw();
+
+            if (innerSkyboxTexture != null)
+            {
+                context.Texture = innerSkyboxTexture;
+                context.Transformation = MathHelper.CreateTransformation(
+                    Game.Camera.Position, new Vector3((
+                        Game.Camera.ClippingRange.Y - 100) * 0.65f),
+                    Quaternion.CreateFromAxisAngle(Vector3.UnitY, 
+                    Angle.Deg(45)));
+                context.Opacity = 
+                    MathHelper.CalculateTimeSine(0.5, 0.05) + 0.95f;
+                context.Draw();
+            }
 
             context.Opacity = 1;
 
@@ -308,19 +312,6 @@ namespace TrippingCubes
                 } while (unsavedChunksLeft);
 
                 Log.Trace("All chunks saved.");
-            }
-
-            Log.Trace("Saving analytics...");
-            try
-            {
-                foreach (var protocol in characterProtocols)
-                    protocol.Save(FileSystem, "/Analytics/");
-
-                Log.Trace("Analytics data saved successfully.");
-            }
-            catch (Exception exc)
-            {
-                Log.Error("The analytics data couldn't be saved.", exc);
             }
 
             skyboxTexture?.Dispose();

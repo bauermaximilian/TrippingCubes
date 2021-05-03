@@ -17,6 +17,7 @@ namespace TrippingCubes
         private const string XmlNodeStyle = "Style";
         private const string XmlNodeBlockRegistryPath = "BlockRegistryPath";
         private const string XmlNodeSkyboxPath = "SkyboxPath";
+        private const string XmlNodeInnerSkyboxPath = "InnerSkyboxPath";
         private const string XmlNodePaths = "Paths";
         private const string XmlNodePathPoint = "Point";
         private const string XmlNodeEntityConfigurations = 
@@ -39,6 +40,9 @@ namespace TrippingCubes
 
         public FileSystemPath SkyboxPath { get; set; } =
             "/Styles/Vaporwave/skybox.png";
+
+        public FileSystemPath InnerSkyboxPath { get; set; } =
+            FileSystemPath.Empty;
 
         public static GameWorldConfiguration FromXml(IFileSystem fileSystem,
             FileSystemPath configurationFilePath)
@@ -129,6 +133,17 @@ namespace TrippingCubes
             {
                 throw new XmlException("The specified value for " +
                     $"{nameof(XmlNodeSkyboxPath)} is invalid.", exc);
+            }
+            
+            try
+            {
+                InnerSkyboxPath = worldNode[XmlNodeInnerSkyboxPath]?.InnerText 
+                    ?? InnerSkyboxPath;
+            }
+            catch (Exception exc)
+            {
+                throw new XmlException("The specified value for " +
+                    $"{nameof(XmlNodeInnerSkyboxPath)} is invalid.", exc);
             }
         }
 

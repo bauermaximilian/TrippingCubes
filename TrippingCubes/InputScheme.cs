@@ -62,6 +62,8 @@ namespace TrippingCubes
 
         public ControlMapping FilterToggle { get; }
 
+        public ControlMapping DebugTrigger1 { get; }
+
         public InputScheme(ControlsManager controls)
         {
             MoveForward = controls.Map(KeyboardKey.W);
@@ -85,6 +87,7 @@ namespace TrippingCubes
             RemoveBlock = controls.Map(MouseButton.Right);
             SwitchInputScheme = controls.Map(KeyboardKey.Tab);
             FilterToggle = controls.Map(KeyboardKey.V);
+            DebugTrigger1 = controls.Map(KeyboardKey.F2);
         }
     }
 }
