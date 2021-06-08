@@ -386,7 +386,7 @@
 		<block key="5:4" identifier="pixelbrick.blue.fade">
 			<mesh reference="block"/>
 			<texture>
-				<base>pixelbrick_blue-fade.png</base>
+				<base>pixelbrick_blue.png</base>
 			</texture>
 		</block>
 		<block key="6" identifier="lasers.horizontal">
