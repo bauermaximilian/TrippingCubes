@@ -82,9 +82,6 @@ namespace TrippingCubes
         private const string FlagCreatorMode = "creator";
 
         private const int ReturnCodeSuccess = 0;
-        private const int ReturnCodeTokenError = -1;
-        private const int ReturnCodeApiErrorBeginning = -2;
-        private const int ReturnCodeApiErrorEnd = -3;
         private const int ReturnCodeGameEndedTooSoon = -4;
 
         public AnimatedColor OverlayColor { get; } = new AnimatedColor();
