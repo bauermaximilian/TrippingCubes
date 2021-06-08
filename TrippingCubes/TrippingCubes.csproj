@@ -6,6 +6,14 @@
     <StartupObject></StartupObject>
 	<DefaultItemExcludes>$(DefaultItemExcludes);**\*.blend1</DefaultItemExcludes>
 	<ApplicationIcon>Icon.ico</ApplicationIcon>
+	<AssemblyVersion>0.4.2.0</AssemblyVersion>
+	<FileVersion>0.4.2.0</FileVersion>
+	<NeutralLanguage>en</NeutralLanguage>
+	<RepositoryUrl>https://github.com/bauermaximilian/TrippingCubes</RepositoryUrl>
+	<PackageProjectUrl>https://github.com/bauermaximilian/TrippingCubes</PackageProjectUrl>
+	<Authors>Maximilian Bauer</Authors>
+	<Company>Maximilian Bauer</Company>
+	<Version>0.4.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
