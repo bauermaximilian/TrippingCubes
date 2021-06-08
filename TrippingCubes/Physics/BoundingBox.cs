@@ -23,13 +23,15 @@ namespace TrippingCubes.Physics
 {
     public readonly struct BoundingBox
     {
+        public static BoundingBox Empty { get; } =
+            new BoundingBox(0, 0, 0, 0, 0, 0);
+
+        public static BoundingBox Unit { get; } =
+            new BoundingBox(0, 0, 0, 1, 1, 1);
+
         public Vector3 Position { get; }
 
         public Vector3 Dimensions { get; }
-
-        public Vector3 Maximum => Position + Dimensions;
-
-        public float Volume => Dimensions.X * Dimensions.Y * Dimensions.Z;
 
         public BoundingBox(Vector3 position, Vector3 dimensions)
         {
@@ -45,6 +47,34 @@ namespace TrippingCubes.Physics
         public BoundingBox Translated(Vector3 translation)
         {
             return new BoundingBox(Position + translation, Dimensions);
+        }
+
+        public Vector3 PivotBottom()
+        {
+            return new Vector3(Dimensions.X / 2, 0, Dimensions.Z / 2) +
+                Position;
+        }
+
+        public float Volume()
+        {
+            return Dimensions.X * Dimensions.Y * Dimensions.Z;
+        }
+
+        public Vector3 Maximum()
+        {
+            return Position + Dimensions;
+        }
+
+        public bool IntersectsWith(in BoundingBox other)
+        {
+            Vector3 pos = Position;
+            Vector3 max = Maximum();
+            Vector3 otherPos = other.Position;
+            Vector3 otherMax = other.Maximum();
+
+            return (pos.X <= otherMax.X && max.X >= otherPos.X) &&
+                (pos.Y <= otherMax.Y && max.Y >= otherPos.Y) &&
+                (pos.Z <= otherMax.Z && max.Z >= otherPos.Z);
         }
 
         public override string ToString()

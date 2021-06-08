@@ -86,8 +86,7 @@ else:
     # At the same time, combine the referenced vertices with their color and 
     # UV data and put them into the vertices array.
     for face in export_mesh.faces:
-        faces[face.index] = 
-            [face.verts[0].index, face.verts[1].index, face.verts[2].index]
+        faces[face.index] = [face.verts[0].index, face.verts[1].index, face.verts[2].index]
         for loop in face.loops:
             vertex = []
             vertex.append(round(loop.vert.co.x, ROUND_VECTOR_TO_DIGITS))

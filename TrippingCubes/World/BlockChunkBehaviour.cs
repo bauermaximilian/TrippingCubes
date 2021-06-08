@@ -40,7 +40,7 @@ namespace TrippingCubes.World
 
         private readonly BlockChunkManager manager;
 
-        private Dictionary<Vector3I, Block> lightSources =
+        private readonly Dictionary<Vector3I, Block> lightSources =
             new Dictionary<Vector3I, Block>();
 
         private bool meshRecalculationRequired;
@@ -171,8 +171,8 @@ namespace TrippingCubes.World
                 && targetViewAvailable)
             {
                 meshRecalculationInProgress = true;
-                GenerateChunkMeshAsync(chunk).AddFinalizer(
-                    OnViewMadeAvailableSuccess, OnViewMadeAvailableFailed);
+                GenerateChunkMeshAsync(chunk).Subscribe(
+                    OnViewMadeAvailableCompleted);
             }
         }
 
@@ -195,27 +195,30 @@ namespace TrippingCubes.World
             });
         }
 
-        private void OnViewMadeAvailableSuccess(MeshBuffer mesh)
+        private void OnViewMadeAvailableCompleted(bool success,
+            MeshBuffer mesh, Exception error)
         {
-            this.mesh?.Dispose();
-            this.mesh = mesh;
-            meshRecalculationInProgress = false;
-            meshRecalculationRequired = false;
+            if (success)
+            {
+                this.mesh?.Dispose();
+                this.mesh = mesh;
+                meshRecalculationInProgress = false;
+                meshRecalculationRequired = false;
 
-            targetViewAvailable = viewAvailable = true;
-        }
+                targetViewAvailable = viewAvailable = true;
+            }
+            else
+            {
+                meshRecalculationInProgress = false;
+                meshRecalculationRequired = false;
 
-        private void OnViewMadeAvailableFailed(Exception exc)
-        {
-            meshRecalculationInProgress = false;
-            meshRecalculationRequired = false;
+                targetViewAvailable = viewAvailable = false;
 
-            targetViewAvailable = viewAvailable = false;
+                chunk.Lock();
 
-            chunk.Lock();
-
-            Log.Error("Chunk [" + chunk.Offset + "] mesh generation failed.", 
-                exc);
+                Log.Error($"Chunk [{chunk.Offset}] mesh generation failed.",
+                    error);
+            }
         }
 
         public void Dispose()

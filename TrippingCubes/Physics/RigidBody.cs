@@ -15,8 +15,13 @@
  * 
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * The following code is based on "voxel-physics-engine" 
+ * by Andy Hall (https://github.com/andyhall), used under the
+ * conditions of the MIT license. See ABOUT.txt for the complete license info.
  */
 
+using ShamanTK.Common;
 using System;
 using System.Numerics;
 
@@ -26,24 +31,30 @@ namespace TrippingCubes.Physics
     {
         public float Mass { get; set; } = 1;
 
-        public float Friction { get; set; } = 1;
+        public float Friction { get; set; } = 0.1f;
 
         public float Restitution { get; set; } = 0;
 
         public float GravityMultiplier { get; set; } = 1;
 
-        public bool AutoStep { get; set; } = false;
+        public bool EnableAutoJump { get; set; } = false;
 
         public float? AirDrag { get; set; } = null;
 
         public float? FluidDrag { get; set; } = null;
 
+        public Angle Orientation { get; set; } = Angle.Zero;
+
+        public Angle Rotation { get; private set; } = Angle.Zero;
+
         // event argument is impulse J = m * dv
         public event Action<Vector3> Collide;
 
-        public event EventHandler Step;
+        public event EventHandler AutoJump;
 
         public BoundingBox BoundingBox => boundingBox;
+
+        public Vector3 Position => BoundingBox.PivotBottom();
 
         public bool InFluid { get; private set; } = false;
 
@@ -51,8 +62,12 @@ namespace TrippingCubes.Physics
 
         public Vector3 Velocity => velocity;
 
-        public bool IsNotAffectedByGravity => !world.HasGravity ||
+        public bool IsNotAffectedByGravity => !World.HasGravity ||
             GravityMultiplier == 0;
+
+        public bool DoesNotCollideWithOtherObjects { get; set; } = false;
+
+        public bool IsCharacter { get; set; } = false;
 
         private readonly Sweep sweep;
 
@@ -60,6 +75,7 @@ namespace TrippingCubes.Physics
 
         private Vector3 forces = Vector3.Zero;
         private Vector3 impulses = Vector3.Zero;
+        private Angle angularForces = Angle.Zero;
 
         private Vector3 velocity = Vector3.Zero;
         private Vector3 resting = Vector3.Zero;
@@ -67,28 +83,40 @@ namespace TrippingCubes.Physics
 
         private int sleepFrameCount;
 
-        private readonly PhysicsSystem world;
+        public PhysicsSystem World { get; }
 
-        private const float PhysicsEpsilon = 0.0001f;
-
-        internal RigidBody(PhysicsSystem world, in BoundingBox aabb)
+        internal RigidBody(PhysicsSystem world, in BoundingBox boundingBox)
         {
-            this.world = world ??
+            World = world ??
                 throw new ArgumentNullException(nameof(world));
 
             sweep = new Sweep(world.isSolid);
 
-            this.boundingBox = aabb;
+            this.boundingBox = boundingBox;
 
             MarkActive();
         }
 
-        public void SetPosition(in Vector3 position)
+        public void MoveTo(in Vector3 position)
         {
             SanityCheck(position, nameof(position));
 
             Vector3 translation = position - boundingBox.Position;
             boundingBox = boundingBox.Translated(translation);
+            MarkActive();
+        }
+
+        public void Move(in Vector3 translation)
+        {
+            SanityCheck(translation, nameof(translation));
+            boundingBox = boundingBox.Translated(translation);
+            MarkActive();
+        }
+
+        public void ApplyAcceleration(Vector3 accerlation)
+        {
+            SanityCheck(accerlation, nameof(accerlation));
+            forces += accerlation * Mass;
             MarkActive();
         }
 
@@ -106,9 +134,21 @@ namespace TrippingCubes.Physics
             MarkActive();
         }
 
+        public void ApplyVelocityChange(Vector3 velocityChange)
+        {
+            SanityCheck(velocityChange, nameof(velocityChange));
+            impulses += velocityChange * Mass;
+            MarkActive();
+        }
+
+        public void ApplyAngularAcceleration(Angle acceleration)
+        {
+            angularForces += acceleration * Mass;
+        }
+
         private void MarkActive()
         {
-            sleepFrameCount = 10 | 0;
+            sleepFrameCount = 10;
         }
 
         private void SanityCheck(Vector3 vector, string vectorName)
@@ -146,12 +186,15 @@ namespace TrippingCubes.Physics
             SanityCheck(forces, nameof(resting));
 
             // semi-implicit Euler integration
-            Vector3 a = forces * (1 / Mass);
-            a += world.Gravity * GravityMultiplier;
+            Vector3 accerlation = forces / Mass;
+            accerlation += World.Gravity * GravityMultiplier;
 
-            Vector3 deltaVelocity = impulses * (1 / Mass);
-            deltaVelocity += a * deltaSeconds;
+            Vector3 deltaVelocity = accerlation * deltaSeconds;
+            deltaVelocity += impulses / Mass;
             velocity += deltaVelocity;
+
+            Angle deltaRotation = (angularForces / Mass);
+            Rotation += deltaRotation * deltaSeconds;
 
             // apply friction based on change in velocity this frame
             if (Friction > 0)
@@ -165,27 +208,52 @@ namespace TrippingCubes.Physics
             // body settings override global settings
             float drag;
             if (InFluid) 
-                drag = (FluidDrag ?? world.FluidDrag) *
+                drag = (FluidDrag ?? World.FluidDrag) *
                     (1 - (float)Math.Pow((1 - ratioInFluid), 2));
-            else drag = AirDrag ?? world.AirDrag;
+            else drag = AirDrag ?? World.AirDrag;
 
             velocity *= Math.Max(1 - drag * deltaSeconds / Mass, 0);
+            Rotation *= Math.Max(1 - (drag * World.AngularDragFactor) * 
+                deltaSeconds / Mass, 0);
 
-            // x1-x0 = v1*dt
+            Orientation += Rotation * deltaSeconds;
+
+            // "dx" specifies the "instantenous change in position"
+            // "dt" the time delta (here "deltaSeconds")
+            // velocity = dx / dt
             Vector3 dx = velocity * deltaSeconds;
 
             // clear forces and impulses for next timestep
             impulses = forces = Vector3.Zero;
+            angularForces = Angle.Zero;
 
             BoundingBox previousBoundingBox = boundingBox;
 
             // sweeps aabb along dx and accounts for collisions
-            ProcessCollisions(ref boundingBox, ref dx, ref resting);
+            ProcessCollisions(ref boundingBox, dx, ref resting);
 
-            // if autostep, and on ground, run collisions again with stepped up aabb
-            if (AutoStep)
+            if (EnableAutoJump)
             {
-                TryAutoStepping(previousBoundingBox, dx);
+                TryAutoJumping(boundingBox, dx);
+            }
+
+            if (!DoesNotCollideWithOtherObjects)
+            {
+                // HACK: If there's a collision with any other entity in the
+                // world (checked via bounding box X/Z), reset the bounding box
+                // to the previous one. Very dirty and time-consuming. Pfui.
+                foreach (RigidBody body in World.Bodies)
+                {
+                    if (body == this || body.DoesNotCollideWithOtherObjects)
+                        continue;
+
+                    if (boundingBox.IntersectsWith(body.boundingBox))
+                    {
+                        boundingBox = previousBoundingBox;
+                        velocity *= 0.5f;
+                        break;
+                    }
+                }
             }
 
             // Collision impacts. resting shows which axes had collisions:
@@ -208,23 +276,8 @@ namespace TrippingCubes.Physics
                 velocity.Z = 0;
             }
 
-            // Old slower logic:
-            //for (int i = 0; i < 3; ++i)
-            //{
-            //    if (GetVectorAxis(resting, i) != 0)
-            //    {
-            //        // count impact only if wasn't collided last frame
-            //        if (GetVectorAxis(previousResting, i) == 0)
-            //        {
-            //            SetVectorAxis(ref impacts,
-            //                -GetVectorAxis(velocity, i), i);
-            //        }
-            //        SetVectorAxis(ref velocity, 0, i);
-            //    }
-            //}
-
-            float mag = impacts.Length();
-            if (mag > 0.001f) // epsilon
+            float impactsLength = impacts.Length();
+            if (impactsLength > PhysicsSystem.Epsilon)
             {
                 // send collision event - allows client to optionally change
                 // body's restitution depending on what terrain it hit
@@ -232,7 +285,7 @@ namespace TrippingCubes.Physics
                 impacts *= Mass;
                 Collide?.Invoke(impacts);
 
-                if (Restitution > 0 && mag > world.MinBounceImpulse)
+                if (Restitution > 0 && impactsLength > World.MinBounceImpulse)
                 {
                     impacts *= Restitution;
                     ApplyImpulse(impacts);
@@ -241,45 +294,23 @@ namespace TrippingCubes.Physics
 
             // sleep check
             float vsq = velocity.LengthSquared();
-            if (vsq > 0.00001f) MarkActive();
+            if (vsq > PhysicsSystem.Epsilon) MarkActive();
         }
 
-        private void TryAutoStepping(BoundingBox previousBoundingBox, Vector3 dx)
+        private void TryAutoJumping(BoundingBox previousBoundingBox, 
+            Vector3 dx)
         {
-            if (resting.Y >= 0 && InFluid) return;
+            if (resting.Y >= 0 || InFluid) return;
 
             // direction movement was blocked before trying a step
             bool xBlocked = resting.X != 0;
             bool zBlocked = resting.Z != 0;
             if (!(xBlocked || zBlocked)) return;
 
-            // continue autostepping only if headed sufficiently into obstruction
-            float ratio = Math.Abs(dx.X / dx.Z);
-            float cutoff = 4;
-            if (!xBlocked && ratio > cutoff) return;
-            if (!zBlocked && ratio < 1 / cutoff) return;
-
-            // original target position before being obstructed
-            Vector3 targetPos = previousBoundingBox.Position + dx;
-
-            // move towards the target until the first X/Z collision
-            sweep.Execute(ref previousBoundingBox, ref dx,
-                (float dist, int axisIndex, float dir, ref Vector3 vec) =>
-                {
-                    if (axisIndex == 1)
-                    {
-                        vec.Y = 0;
-                        return false;
-                    }
-                    else return true;
-                }, false);
-
-            float y = boundingBox.Position.Y;
-            float ydist = (float)Math.Floor(y + 1.001) - y;
-            Vector3 upvec = new Vector3(0, ydist, 0);
+            previousBoundingBox = previousBoundingBox.Translated(new Vector3(
+                0, 1.1f, 0));
             bool collided = false;
-            // sweep up, bailing on any obstruction
-            sweep.Execute(ref previousBoundingBox, ref upvec,
+            sweep.Execute(ref previousBoundingBox, dx,
                 (float dist, int axisIndex, float dir, ref Vector3 vec) =>
                 {
                     collided = true;
@@ -287,29 +318,15 @@ namespace TrippingCubes.Physics
                 }, false);
             if (collided) return;
 
-            // now move in X/Z however far was left over before hitting the obstruction
-            Vector3 leftover = targetPos - previousBoundingBox.Position;
-            leftover.Y = 0;
-            Vector3 tmpResting = Vector3.Zero;
-            ProcessCollisions(ref boundingBox, ref leftover, ref tmpResting);
-
-            // bail if no movement happened in the originally blocked direction
-            if (xBlocked && previousBoundingBox.Position.X != targetPos.X) return;
-            if (xBlocked && previousBoundingBox.Position.Z != targetPos.Z) return;
-
-            // done - oldBox is now at the target autostepped position
-            boundingBox = previousBoundingBox;
-            resting.X = tmpResting.X;
-            resting.Z = tmpResting.Z;
-            Step?.Invoke(this, EventArgs.Empty);
+            AutoJump?.Invoke(this, EventArgs.Empty);
         }
 
         private float ProcessCollisions(ref BoundingBox boundingBox, 
-            ref Vector3 velocity, ref Vector3 resting)
+            Vector3 dx, ref Vector3 resting)
         {
             Vector3 restingValue = Vector3.Zero;
 
-            float result = sweep.Execute(ref boundingBox, ref velocity, 
+            float result = sweep.Execute(ref boundingBox, dx, 
                 (float dist, int axisIndex, float dir, ref Vector3 vec) =>
             {
                 axisIndex %= 3;
@@ -330,31 +347,22 @@ namespace TrippingCubes.Physics
             return result;
         }
 
-        private static float GetVectorAxis(in Vector3 vector, int axisIndex)
-        {
-            switch (axisIndex % 3)
-            {
-                case 0: return vector.X;
-                case 1: return vector.Y;
-                default: return vector.Z;
-            }
-        }
-
-        private static void SetVectorAxis(ref Vector3 vector, float axisValue,
-            int axisIndex)
-        {
-            switch (axisIndex % 3)
-            {
-                case 0: vector.X = axisValue; break;
-                case 1: vector.Y = axisValue; break;
-                case 2: vector.Z = axisValue; break;
-            }
-        }
-
-        private void ApplyFrictionByAxis(int axisIndex, in Vector3 deltaVelocity)
+        private void ApplyFrictionByAxis(int axisIndex, 
+            in Vector3 deltaVelocity)
         {            
-            float restDir = GetVectorAxis(resting, axisIndex);
-            float vNormal = GetVectorAxis(deltaVelocity, axisIndex);
+            float restDir = (axisIndex % 3) switch
+            {
+                0 => resting.X,
+                1 => resting.Y,
+                _ => resting.Z,
+            };
+
+            float vNormal = (axisIndex % 3) switch
+            {
+                0 => deltaVelocity.X,
+                1 => deltaVelocity.Y,
+                _ => deltaVelocity.Z,
+            };
 
             // friction applies only if moving into a touched surface
             if (restDir == 0) return;
@@ -362,19 +370,16 @@ namespace TrippingCubes.Physics
 
             // current vel lateral to friction axis
             Vector3 lateralVelocity = velocity;
-            SetVectorAxis(ref lateralVelocity, 0, axisIndex);
-            float vCurr = lateralVelocity.Length();
-            if (vCurr <= 0.0001) return;
+            switch (axisIndex % 3)
+            {
+                case 0: lateralVelocity.X = 0; break;
+                case 1: lateralVelocity.Y = 0; break;
+                case 2: lateralVelocity.Z = 0; break;
+            }
 
-            // treat current change in velocity as the result of a pseudoforce
-            //        Fpseudo = m*dv/dt
-            // Base friction force on normal component of the pseudoforce
-            //        Ff = u * Fnormal
-            //        Ff = u * m * dvnormal / dt
-            // change in velocity due to friction force
-            //        dvF = dt * Ff / m
-            //            = dt * (u * m * dvnormal / dt) / m
-            //            = u * dvnormal
+            float vCurr = lateralVelocity.Length();
+            if (vCurr <= PhysicsSystem.Epsilon) return;
+
             float dvMax = Math.Abs(Friction * vNormal);
 
             // decrease lateral vel by dvMax (or clamp to zero)
@@ -384,38 +389,15 @@ namespace TrippingCubes.Physics
             if (axisIndex != 2) velocity.Z *= scaler;
         }
 
-        private void ApplyFrictionByAxis(float resting, float deltaVelocity,
-            ref float velocityOtherAxisA, ref float velocityOtherAxisB)
-        {
-            if (resting != 0 && resting * deltaVelocity > 0)
-            {
-                float axisVelocity = (float)Math.Sqrt(
-                    Math.Pow(velocityOtherAxisA, 2) +
-                    Math.Pow(velocityOtherAxisB, 2));
-
-                if (axisVelocity > PhysicsEpsilon)
-                {
-                    float deltaVelocityMax =
-                        Math.Abs(Friction * deltaVelocity);
-
-                    float scaler = (axisVelocity > deltaVelocityMax) ?
-                        (axisVelocity - deltaVelocityMax) / axisVelocity : 0;
-
-                    velocityOtherAxisA *= scaler;
-                    velocityOtherAxisB *= scaler;
-                }
-            }
-        }
-
         // check if under water, if so apply buoyancy and drag forces
         private void ApplyFluidForces()
         {
             float cx = (float)Math.Floor(boundingBox.Position.X);
-            float cz = (float)Math.Floor(boundingBox.Position.Z);//??? ggf. -1 nötig
+            float cz = (float)Math.Floor(boundingBox.Position.Z);
             float y0 = (float)Math.Floor(boundingBox.Position.Y);
-            float y1 = (float)Math.Floor(boundingBox.Maximum.Y);//?
+            float y1 = (float)Math.Floor(boundingBox.Maximum().Y);
 
-            if (!world.isFluid(new Vector3(cx, y0, cz)))
+            if (!World.isFluid(new Vector3(cx, y0, cz)))
             {
                 InFluid = false;
                 this.ratioInFluid = 0;
@@ -424,7 +406,7 @@ namespace TrippingCubes.Physics
 
             float submerged = 1;
             float cy = y0 + 1;
-            while (cy <= y1 && world.isFluid(new Vector3(cx, cy, cz)))
+            while (cy <= y1 && World.isFluid(new Vector3(cx, cy, cz)))
             {
                 submerged++;
                 cy++;
@@ -433,8 +415,8 @@ namespace TrippingCubes.Physics
             float heightInFluid = fluidLevel - boundingBox.Position.Y;
             float ratioInFluid = heightInFluid / boundingBox.Dimensions.Y;
             if (ratioInFluid > 1) ratioInFluid = 1;
-            float displaced = boundingBox.Volume * ratioInFluid;
-            Vector3 bouyantForce = -world.Gravity * world.FluidDensity * 
+            float displaced = boundingBox.Volume() * ratioInFluid;
+            Vector3 bouyantForce = -World.Gravity * World.FluidDensity * 
                 displaced;
             ApplyForce(bouyantForce);
 
@@ -455,12 +437,12 @@ namespace TrippingCubes.Physics
             // and check there's still a collision
             float deltaSeconds = (float)delta.TotalSeconds;
 
-            Vector3 sleepVector = world.Gravity * 0.5f * deltaSeconds * 
+            Vector3 sleepVector = World.Gravity * 0.5f * deltaSeconds * 
                 deltaSeconds * GravityMultiplier;
 
             bool isResting = false;
 
-            sweep.Execute(ref boundingBox, ref sleepVector, 
+            sweep.Execute(ref boundingBox, sleepVector, 
                 (float dist, int axisIndex, float dir, ref Vector3 vec) =>
                 {
                     isResting = true; return true;

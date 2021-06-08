@@ -25,92 +25,214 @@ using ShamanTK.IO;
 using TrippingCubes.Common;
 using System;
 using System.Numerics;
-using System.Threading;
 using TrippingCubes.World;
+using System.Collections.Generic;
+using System.Threading;
+using System.Globalization;
+using System.Threading.Tasks;
 
 namespace TrippingCubes
 {
     public class TrippingCubesGame : ShamanApp
     {
-        private readonly float availabilityDistanceChangeTreshold = 16;
-        private readonly float distanceForAvailabilityDataOnly = 48;
-        private readonly float distanceForAvailabilityNone = 64;
-
-        private Chunk<BlockVoxel> rootChunk;
-
         private readonly RenderParameters gameParameters = 
             new RenderParameters();
         private readonly RenderParameters guiParameters =
             new RenderParameters();
 
         private MeshBuffer cursor;
-        private MeshBuffer plane;
-        private MeshBuffer skyboxMesh;
-        private TextureBuffer skyboxTextureInner;
-        private TextureBuffer skyboxTextureOuter;
-        private SpriteFont font;
+        private MeshBuffer plane;        
+        private SpriteFont font;        
+
         private RenderTextureBuffer gameRenderTarget = null;
 
-        private ControlMapping exit;
-        private ControlMapping fullscreenToggle;
-        private ControlMapping addBlock, removeBlock;
-        private ControlMapping switchInputScheme;
-        private ControlMapping filterToggle;
-
-        private FlyCamController flyCamController;
-        private FirstPersonController firstPersonController;
-
-        private bool useFlyCamController = true;
-
         private GameConsole gameConsole;
-        private BlockRegistry blockRegistry;                
 
         private Vector3I cursorPosition;
         private BlockKey currentCursorBlockKey = default;
         private Vector3I selectionStart;
         private bool editTempLock;
-        private bool cursorActive;
+        private bool cursorActive;       
+        
+        internal static string DebugUpdateText { get; set; }
 
-        public static void Main(string[] args)
+        internal static List<(Vector3 Position, Color Color)> DebugMarkers
+        { get; } = new List<(Vector3 Position, Color Color)>();
+
+        internal TextBox OnScreenTextBox { get; private set; }
+
+        internal GameWorld World { get; private set; }
+
+        internal InputScheme InputScheme { get; private set; }
+
+        internal Camera Camera => gameParameters.Camera;
+
+        internal new ResourceManager Resources => base.Resources;
+
+        internal ModelCache Models { get; private set; }
+
+        internal bool ReachedGoal { get; private set; } = false;
+
+        internal bool CreatorMode { get; }
+
+        private readonly FileSystemPath worldConfigurationPath =
+            "/Worlds/Default.xml";
+
+        private const string FlagConfiguration = "configuration:";
+        private const string FlagCreatorMode = "creator";
+
+        private const int ReturnCodeSuccess = 0;
+        private const int ReturnCodeGameEndedTooSoon = -4;
+
+        public AnimatedColor OverlayColor { get; } = new AnimatedColor();
+
+        public static int Main(string[] args)
         {
             Log.UseEnglishExceptionMessages = true;
-            Log.MessageLogged += (s, e) =>
-                Console.WriteLine(e.ToString(Console.BufferWidth - 2));
-            TrippingCubesGame game = new TrippingCubesGame();
-            game.Run(new ShamanTK.Platforms.DesktopGL.PlatformProvider());
+            bool consoleAvailable = TryAddConsoleLogOutput();
 
-            if (Log.HighestLogMessageLevel >= Log.MessageLevel.Warning)
-                Console.ReadKey(true);
+            bool creatorMode = false;
+            string configurationPath = null;
+
+            foreach (string argument in args)
+            {
+                string arg = argument.Trim(' ', '/').ToLowerInvariant();
+
+                if (arg.StartsWith(FlagConfiguration))
+                    configurationPath = arg.Replace(FlagConfiguration, "");
+                else if (arg.Equals(FlagCreatorMode,
+                    StringComparison.InvariantCultureIgnoreCase))
+                    creatorMode = true;
+            }
+
+            TrippingCubesGame game = new TrippingCubesGame(configurationPath,
+                creatorMode);
+
+            DateTime startGameTime = DateTime.Now;
+            game.Run(new ShamanTK.Platforms.DesktopGL.PlatformProvider(),
+                FileSystem.ProgramDataWritable);
+            if ((DateTime.Now - startGameTime) < TimeSpan.FromSeconds(6))
+                return ReturnCodeGameEndedTooSoon;
+
+            if (consoleAvailable)
+            {
+                if (Log.HighestLogMessageLevel >= Log.MessageLevel.Error)
+                    Console.ReadKey(true);
+            }
+
+            return ReturnCodeSuccess;
+        }
+
+        private static bool TryAddConsoleLogOutput()
+        {
+            try
+            {
+                int height = Console.WindowHeight;
+                Log.MessageLogged += (s, e) =>
+                    Console.WriteLine(e.ToString(Console.BufferWidth - 2));
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public TrippingCubesGame(string worldConfigurationPath, 
+            bool creatorMode)
+        {
+            CreatorMode = creatorMode;
+
+            if (creatorMode) Log.Trace("Creator mode enabled.");
+
+            if (!string.IsNullOrWhiteSpace(worldConfigurationPath))
+            {
+                try
+                {
+                    FileSystemPath customWorldConfigurationPath =
+                        new FileSystemPath(worldConfigurationPath, false);
+                    if (!customWorldConfigurationPath.IsAbsolute)
+                        throw new Exception("The path must be absolute and " +
+                            "start with a single '/'.");
+                    this.worldConfigurationPath = customWorldConfigurationPath;
+                }
+                catch (Exception exc)
+                {
+                    Log.Error("The specified world configuration path is " +
+                        "invalid and will be ignored.", exc);
+                }
+            }
         }
 
         protected override void Load()
         {
-            fullscreenToggle = Controls.Map(KeyboardKey.F11);
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-            guiParameters.BackfaceCullingEnabled = true;
-            
-            gameParameters.Filters.ColorShades = new Vector3(8, 8, 4);
-            gameParameters.Filters.ResolutionScaleFactor = 0.42f;
-            gameParameters.Filters.ResolutionScaleFilter = TextureFilter.Nearest;
+            Graphics.Mode = CreatorMode ? WindowMode.NormalScalable :
+                WindowMode.Fullscreen;
 
-            Graphics.Size = new Size(800, 600);
+            OverlayColor.Clear(Color.Black);
 
+            InputScheme = new InputScheme(Controls);
+
+            Models = new ModelCache(Resources);
+
+            GameWorldConfiguration configuration = null;
+            try
+            {
+                configuration =
+                    GameWorldConfiguration.FromXml(Resources.FileSystem,
+                    worldConfigurationPath);
+            }
+            catch (Exception exc)
+            {
+                Log.Error("The game world configuration couldn't be loaded " +
+                    $"from {worldConfigurationPath}. The application will " +
+                    "be terminated.", exc);
+                Close();
+                return;
+            }
+
+            try
+            {
+                FileSystemPath worldChunkDirectoryPath =
+                    FileSystemPath.Combine(
+                        worldConfigurationPath.GetParentDirectory(),
+                        $"{worldConfigurationPath.GetFileName(true)}.world");
+
+                World = new GameWorld(configuration, worldChunkDirectoryPath,
+                    this);
+            }
+            catch (Exception exc)
+            {
+                Log.Error("The game world initialisation failed. " +
+                    "The application will be terminated.", exc);
+                Close();
+                return;
+            }
+
+            gameParameters.Filters.ScanlineEffectEnabled = true;
+            gameParameters.BackfaceCullingEnabled = true;
+            gameParameters.Filters.Enabled = true;
+            //gameParameters.Filters.ColorShades = new Vector3(16, 16, 8);
+            //gameParameters.Filters.ResolutionScaleFactor = 0.3f;
+            gameParameters.Filters.ResolutionScaleFilter = 
+                TextureFilter.Nearest;
+
+            Camera.ClippingRange = new Vector2(0.05f, 500);
+
+            guiParameters.BackfaceCullingEnabled = false;
             guiParameters.Camera.ProjectionMode = 
                 ProjectionMode.OrthgraphicRelativeProportional;
 
+            Graphics.Size = new Size(800, 600);
             Graphics.Title = "TrippingCubes - Development Preview";
-
-            Graphics.Resized += GraphicsResized;
-
-            DateTime startTime = DateTime.Now;
-            BlockRegistryBuilder blockRegistryBuilder =
-                BlockRegistryBuilder.FromXml("/Vaporwave/registry.xml",
-                Resources.FileSystem, false);
-            blockRegistry = blockRegistryBuilder.GenerateRegistry(
-                Resources.FileSystem);
-            Log.Trace("Block registry with " + blockRegistry.Count +
-                " block definitions loaded in " +
-                (DateTime.Now - startTime).TotalMilliseconds + "ms.");
+            Graphics.Resized += (s,e) =>
+            {
+                gameRenderTarget?.Dispose();
+                gameRenderTarget = Graphics.CreateRenderBuffer(Graphics.Size,
+                    TextureFilter.Nearest);
+            };
 
             FontRasterizationParameters fontRasterizationParameters =
                 new FontRasterizationParameters() {
@@ -118,258 +240,169 @@ namespace TrippingCubes
                     SizePx = 48 //13, 17, 22, 27
                 };
 
-            Resources.LoadMesh(MeshData.Plane).AddFinalizer(r => plane = r);
-            Resources.LoadMesh(MeshData.Skybox).AddFinalizer(
-                r => skyboxMesh = r);
-            Resources.LoadTexture("/Vaporwave/skybox-inner.png", 
-                TextureFilter.Linear).AddFinalizer(
-                r => skyboxTextureInner = r);
-            Resources.LoadTexture("/Vaporwave/skybox-outer.png", 
-                TextureFilter.Linear).AddFinalizer(
-                r => skyboxTextureOuter = r);
+            Resources.LoadMesh(MeshData.Plane).Subscribe(r => plane = r);
+            
             Resources.LoadGenericFont(new FileSystemPath("/VT323-Regular.ttf"),
                 fontRasterizationParameters, TextureFilter.Linear)
-                .AddFinalizer(r => font = r);
+                .Subscribe(r =>
+                {
+                    font = r;
+                    OnScreenTextBox = new TextBox(font, new SpriteTextFormat()
+                    {
+                        HorizontalAlignment = HorizontalAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Bottom,
+                        TypeSize = 0.035f
+                    })
+                    {
+                        Position = new Vector3(0.5f, 1f, 0.5f)
+                    };
+                });
 
-            Resources.LoadingTasksCompleted += LoadingTasksCompleted;
+            Resources.LoadMesh(MeshData.Block).Subscribe(r => cursor = r);
 
-            Resources.LoadMesh(MeshData.Block).AddFinalizer(r => cursor = r);
-
-            rootChunk = new Chunk<BlockVoxel>(
-                new BlockChunkManager(blockRegistry, Resources,
-                FileSystem.CreateUserDataFileSystem("TrippingCubes"),
-                "/world/"));
-
-            flyCamController = new FlyCamController(gameParameters.Camera)
+            // TODO: Rewrite this as CompoundSyncTask
+            Resources.LoadingTasksCompleted += (s,e) =>
             {
-                MoveForward = Controls.Map(KeyboardKey.W),
-                MoveLeft = Controls.Map(KeyboardKey.A),
-                MoveBackward = Controls.Map(KeyboardKey.S),
-                MoveRight = Controls.Map(KeyboardKey.D),
-                MoveUp = Controls.MapCustom(c => c.IsPressed(KeyboardKey.E)
-                    || c.IsPressed(KeyboardKey.Space)),
-                MoveDown = Controls.MapCustom(c => c.IsPressed(KeyboardKey.Q)
-                    || c.IsPressed(KeyboardKey.Shift)),
-                LookUp = Controls.Map(MouseSpeedAxis.Up),
-                LookRight = Controls.Map(MouseSpeedAxis.Right),
-                LookDown = Controls.Map(MouseSpeedAxis.Down),
-                LookLeft = Controls.Map(MouseSpeedAxis.Left)
+                if (gameConsole == null)
+                {
+                    gameConsole = new GameConsole(plane, font, Controls);
+                    gameConsole.Enabled = CreatorMode;
+                    gameConsole.CommandIssued += GameConsole_CommandIssued;
+                    gameConsole.AppendOutputText("Hello there! Enter '?' to " +
+                        "list all available blocks.\nEnter the name of the " +
+                        "block you want to use,\nthen use the left/right " +
+                        "mouse button to place blocks.\nHave fun :>");
+                    Log.Information("HINT: Use F1 to open the console.");
+                    OverlayColor.Fade(Color.Transparent);
+                }
             };
-
-            firstPersonController = new FirstPersonController(
-                gameParameters.Camera, rootChunk, blockRegistry)
-            {
-                MoveForward = Controls.Map(KeyboardKey.W),
-                MoveLeft = Controls.Map(KeyboardKey.A),
-                MoveBackward = Controls.Map(KeyboardKey.S),
-                MoveRight = Controls.Map(KeyboardKey.D),
-                Jump = Controls.Map(KeyboardKey.Space),
-                LookUp = Controls.Map(MouseSpeedAxis.Up),
-                LookRight = Controls.Map(MouseSpeedAxis.Right),
-                LookDown = Controls.Map(MouseSpeedAxis.Down),
-                LookLeft = Controls.Map(MouseSpeedAxis.Left)
-            };
-
-            exit = Controls.Map(KeyboardKey.Escape);
-
-            addBlock = Controls.Map(MouseButton.Left);
-            removeBlock = Controls.Map(MouseButton.Right);
-
-            switchInputScheme = Controls.Map(KeyboardKey.Tab);
-            filterToggle = Controls.Map(KeyboardKey.V);
-        }
-
-        private void LoadingTasksCompleted(object sender, EventArgs e)
-        {
-            if (gameConsole == null)
-            {
-                gameConsole = new GameConsole(plane, font, Controls);
-                gameConsole.CommandIssued += GameConsole_CommandIssued;
-                gameConsole.AppendOutputText("Hello there! Enter '?' to " +
-                    "list all available blocks.\nEnter the name of the " +
-                    "block you want to use,\nthen use the left/right mouse " +
-                    "button to place blocks.\nHave fun :>");
-
-                Log.Information("HINT: Use F1 to open the console.");
-            }
         }
 
         protected override void Unload()
         {
-            if (rootChunk != null)
-            {
-                Log.Trace("Saving and closing world...");
-                foreach (var chunk in rootChunk)
-                {
-                    chunk.Unlock();
-                    chunk.ChangeAvailability(ChunkAvailability.None);
-                    chunk.Update(TimeSpan.Zero);
-                }
-
-                bool unsavedChunksLeft = false;
-                do
-                {
-                    Thread.Sleep(1000);
-                    foreach (var chunk in rootChunk)
-                    {
-                        chunk.Update(TimeSpan.Zero);
-                        unsavedChunksLeft |=
-                            chunk.Availability != ChunkAvailability.None;
-                    }
-                } while (unsavedChunksLeft);
-
-                Log.Trace("All chunks saved. Exiting...");
-            }
             gameConsole?.Dispose();
-
-        }
-
-        private void GraphicsResized(object sender, EventArgs e)
-        {
-            gameRenderTarget?.Dispose();
-            gameRenderTarget = Graphics.CreateRenderBuffer(Graphics.Size, 
-                TextureFilter.Nearest);
+            World?.Unload();
         }
 
         protected override void Redraw(TimeSpan delta)
-        {
+        {            
             Graphics.Render<IRenderContext>(gameParameters, RenderGame, 
                 gameRenderTarget);
             Graphics.Render<IRenderContext>(guiParameters, RenderGui);
         }
 
-        private void RenderGui(IRenderContext context)
-        {
-            context.Mesh = plane;
-            context.Transformation = MathHelper.CreateTransformation(
-                0.5f, 0.5f, 1,
-                Math.Max(1, (float)Graphics.Size.Width / Graphics.Size.Height),
-                Math.Max(1, (float)Graphics.Size.Height / Graphics.Size.Width),
-                1);
-
-            context.Texture = gameRenderTarget;
-            context.Draw();
-
-            gameConsole?.Draw(context);
-        }
-
         private void RenderGame(IRenderContext context)
         {
-            context.Mesh = skyboxMesh;
-
-            context.Texture = skyboxTextureOuter;
-            context.Transformation = MathHelper.CreateTransformation(
-                gameParameters.Camera.Position,
-                new Vector3(gameParameters.Camera.ClippingRange.Y - 100),
-                Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
-            context.Draw();
-
-            context.Texture = skyboxTextureInner;
-            context.Transformation = MathHelper.CreateTransformation(
-                gameParameters.Camera.Position, new Vector3((
-                gameParameters.Camera.ClippingRange.Y - 100) * 0.65f),
-                Quaternion.CreateFromAxisAngle(Vector3.UnitY, Angle.Deg(45)));
-            context.Opacity = MathHelper.CalculateTimeSine(0.5, 0.05) + 0.95f;
-            context.Draw();
-
-            context.Opacity = 1;
-
-            context.Fog = new Fog(20, 10, Color.TransparentWhite, false);
-
-            foreach (var chunk in rootChunk) chunk.Redraw(context);
+            World.Redraw(context);
 
             if (cursor != null && cursorActive)
             {
-                if ((addBlock.IsActive || removeBlock.IsActive) 
+                if (InputScheme.PickBlock.IsActive)
+                {
+                    context.Opacity = 0.5f;
+                    context.Color = Color.Blue;
+                }
+                else if ((InputScheme.AddBlock.IsActive ||
+                    InputScheme.RemoveBlock.IsActive)
                     && !editTempLock)
                 {
                     context.Opacity = 0.5f;
-                    if (addBlock.IsActive) context.Color = Color.Green;
-                    else if (removeBlock.IsActive) context.Color = Color.Red;
+                    if (InputScheme.AddBlock.IsActive)
+                        context.Color = Color.Green;
+                    else if (InputScheme.RemoveBlock.IsActive)
+                        context.Color = Color.Red;
                 }
                 else
                 {
-                    if (editTempLock) context.Opacity = 0.15f;
-                    else context.Opacity = 0.2f;
+                    if (editTempLock)
+                        context.Opacity = 0.15f;
+                    else
+                        context.Opacity = 0.2f;
+
                     context.Color = Color.White;
-                }                
+                }
 
                 context.Mesh = cursor;
-                
                 context.Texture = null;
 
-                GetAreaFromPoints(cursorPosition, selectionStart,
+                GameWorld.GetAreaFromPoints(cursorPosition, selectionStart,
                     out Vector3I areaPosition, out Vector3I areaScale);
-
                 context.Transformation = MathHelper.CreateTransformation(
                     areaPosition - new Vector3(0.075f),
                     areaScale + new Vector3(0.15f));
 
                 context.Draw();
             }
+
+            context.Mesh = cursor;
+            context.Texture = null;
+            foreach (var marker in DebugMarkers)
+            {
+                context.Color = marker.Color;
+                context.Transformation = MathHelper.CreateTransformation(
+                    marker.Position, new Vector3(0.042f, 50, 0.042f));
+                context.Draw();
+            }
         }
 
-        private void GameConsole_CommandIssued(object sender, string e)
+        private void RenderGui(IRenderContext context)
         {
-            e = e.Trim();
+            context.Mesh = plane;
+            context.Transformation = CreateGuiLayerTransformation(1);
+            context.Texture = gameRenderTarget;
+            context.Draw();
 
-            if (e.Length == 0) gameConsole.HasFocus = false;
-            else if (e == "?")
+            if (OverlayColor.Color != Color.Transparent)
             {
-                gameConsole.AppendOutputText(Log.WordWrapText(
-                    string.Join(", ", blockRegistry.Identifiers), 80));
+                context.Transformation = CreateGuiLayerTransformation(0.55f);
+                context.Texture = null;
+                context.Color = OverlayColor.Color;
+                context.Draw();
             }
-            else
-            {
-                Block block;
-                if (BlockKey.TryParse(e, out BlockKey blockKey))
-                    block = blockRegistry.GetBlock(blockKey, false);
-                else block = blockRegistry.GetBlock(e, false);
 
-                if (block != null)
-                {
-                    /*
-                    gameConsole.AppendOutputText("Cursor block changed to \"" +
-                        block.Identifier + "\" (key '" + block.Key + "').");
-                    */
-                    currentCursorBlockKey = block.Key;
-                    gameConsole.HasFocus = false;
-                }
-                else gameConsole.AppendOutputText("Couldn't find block with " +
-                  "that key or identifier.");
-            }
+            gameConsole?.Draw(context);
+            OnScreenTextBox?.Draw(context);
+        }
+
+        private Matrix4x4 CreateGuiLayerTransformation(float z)
+        {
+            return MathHelper.CreateTransformation(
+                0.5f, 0.5f, z,
+                Math.Max(1, (float)Graphics.Size.Width / Graphics.Size.Height),
+                Math.Max(1, (float)Graphics.Size.Height / Graphics.Size.Width),
+                1);
+        }
+
+        public void EndGame(bool reachedGoal)
+        {
+            OverlayColor.Fade(Color.Black, 1, () => Close());
+            OverlayColor.IsBlocked = true;
+            ReachedGoal = reachedGoal;
         }
 
         protected override void Update(TimeSpan delta)
         {
-            if (fullscreenToggle.IsActivated)
+            DebugUpdateText = "";
+            DebugMarkers.Clear();
+            OverlayColor.Update(delta);
+
+            if (Resources.LoadingTasksPending > 0 && 
+                OverlayColor.Color == Color.Black)
+            {
+                DebugUpdateText = "Loading...";
+            }
+
+            if (InputScheme.FullscreenToggle.IsActivated)
                 Graphics.Mode = Graphics.Mode == WindowMode.Fullscreen ?
                     WindowMode.NormalScalable : WindowMode.Fullscreen;
 
-            if (exit.IsActivated) Close();
+            if (InputScheme.Exit.IsActivated) EndGame(false);
 
-            foreach (var chunk in rootChunk)
-            {
-                Vector3 chunkCenter = new Vector3(chunk.Offset.X +
-                   chunk.SideLength / 2.0f, chunk.Offset.Y +
-                   chunk.SideLength / 2.0f, chunk.Offset.Z +
-                   chunk.SideLength / 2.0f);
+            if (InputScheme.FilterToggle.IsActivated)
+                gameParameters.Filters.Enabled =
+                    !gameParameters.Filters.Enabled;
 
-                float distanceFromCamera = 
-                    (gameParameters.Camera.Position - chunkCenter).Length();
-
-                if (distanceFromCamera < distanceForAvailabilityDataOnly)
-                    chunk.ChangeAvailability(ChunkAvailability.Full);
-                else if (distanceFromCamera > (distanceForAvailabilityDataOnly
-                    + availabilityDistanceChangeTreshold) &&
-                    (distanceFromCamera < distanceForAvailabilityNone))
-                    chunk.ChangeAvailability(ChunkAvailability.DataOnly);
-                else if (distanceFromCamera > (distanceForAvailabilityNone +
-                    availabilityDistanceChangeTreshold))
-                    chunk.ChangeAvailability(ChunkAvailability.None);
-
-                chunk.Update(delta);
-            }
+            Controls.Input.SetMouse(MouseMode.InvisibleFixed);
 
             if (gameConsole != null)
             {
@@ -383,30 +416,70 @@ namespace TrippingCubes
             {
                 cursorPosition = GetCurrentlySelectedVoxel();
 
-                if ((addBlock.IsActive && removeBlock.IsActive))
+                if (InputScheme.PickBlock.IsActive &&
+                    World.RootChunk.TraverseToChunk(cursorPosition, true,
+                    out var chunk) &&
+                    chunk.TryGetVoxel(cursorPosition - chunk.Offset,
+                    out var voxel))
+                {
+                    if (voxel.BlockKey != World.Blocks.DefaultBlock.Key)
+                        currentCursorBlockKey = voxel.BlockKey;
+
                     editTempLock = true;
-                else if (addBlock.IsDeactivated && !editTempLock)
-                    SetArea(selectionStart, cursorPosition, new BlockVoxel(
-                        currentCursorBlockKey));
-                else if (removeBlock.IsDeactivated && !editTempLock)
-                    SetArea(selectionStart, cursorPosition, new BlockVoxel(0));
-                else if (!(addBlock.IsActive || removeBlock.IsActive))
+                }
+                else if (InputScheme.AddBlock.IsActive &&
+                    InputScheme.RemoveBlock.IsActive)
+                    editTempLock = true;
+                else if (InputScheme.AddBlock.IsDeactivated && !editTempLock)
+                    World.SetArea(selectionStart, cursorPosition,
+                        new BlockVoxel(currentCursorBlockKey));
+                else if (InputScheme.RemoveBlock.IsDeactivated && !editTempLock)
+                    World.SetArea(selectionStart, cursorPosition,
+                        new BlockVoxel(0));
+                else if (!(InputScheme.AddBlock.IsActive ||
+                    InputScheme.RemoveBlock.IsActive))
                 {
                     selectionStart = GetCurrentlySelectedVoxel();
                     editTempLock = false;
                 }
             }
 
-            Controls.Input.SetMouse(MouseMode.InvisibleFixed);
+            World.Update(delta);
 
-            if (switchInputScheme.IsActivated) 
-                useFlyCamController = !useFlyCamController;
+            if (OnScreenTextBox != null) 
+                OnScreenTextBox.Text = DebugUpdateText ?? "";
+        }
 
-            if (useFlyCamController) flyCamController.Update(delta);
-            else firstPersonController.Update(delta);
+        private void GameConsole_CommandIssued(object sender, string e)
+        {
+            e = e.Trim();
 
-            if (filterToggle.IsActivated)
-                gameParameters.Filters.Enabled = !gameParameters.Filters.Enabled;
+            if (e.Length == 0) gameConsole.HasFocus = false;
+            else if (e == "?")
+            {
+                gameConsole.AppendOutputText(Log.WordWrapText(
+                    string.Join(", ", World.Blocks.Identifiers), 80));
+            }
+            else
+            {
+                Block block;
+                if (BlockKey.TryParse(e, out BlockKey blockKey))
+                    block = World.Blocks.GetBlock(blockKey, false);
+                else block = World.Blocks.GetBlock(e, false);
+
+                if (block != null)
+                {
+                    //TODO: Add spawn entity functionality
+                    /*
+                    gameConsole.AppendOutputText("Cursor block changed to \"" +
+                        block.Identifier + "\" (key '" + block.Key + "').");
+                    */
+                    currentCursorBlockKey = block.Key;
+                    gameConsole.HasFocus = false;
+                }
+                else gameConsole.AppendOutputText("Couldn't find block with " +
+                  "that key or identifier.");
+            }
         }
 
         private Vector3I GetCurrentlySelectedVoxel()
@@ -417,103 +490,5 @@ namespace TrippingCubes
                 gameParameters.Camera.AlignVector(new Vector3(0, 0, 3.0f),
                 false, false), true);
         }
-
-        private static void GetAreaFromPoints(Vector3I a, Vector3I b,
-            out Vector3I areaPosition, out Vector3I areaScale)
-        {
-            areaPosition = new Vector3I(Math.Min(a.X, b.X),
-                Math.Min(a.Y, b.Y), Math.Min(a.Z, b.Z));
-            areaScale = new Vector3I(Math.Max(a.X, b.X),
-                Math.Max(a.Y, b.Y), Math.Max(a.Z, b.Z)) + Vector3I.One -
-                areaPosition;
-        }
-
-        private void SetArea(Vector3I start, Vector3I end, BlockVoxel voxel)
-        {
-            GetAreaFromPoints(start, end, out Vector3I areaStart,
-                out Vector3I areaScale);
-
-            rootChunk.TraverseToChunk(areaStart, true, out var startChunk);
-            rootChunk.TraverseToChunk(areaStart + areaScale, true,
-                out var endChunk);
-            int chunkSideLength = rootChunk.SideLength;
-            Vector3I wholeChunkArea = Vector3I.One +
-                ((endChunk.Offset - startChunk.Offset) / chunkSideLength);
-
-            Chunk<BlockVoxel>[,,] chunkCache = new Chunk<BlockVoxel>[
-                wholeChunkArea.X, wholeChunkArea.Y, wholeChunkArea.Z];
-            chunkCache[0, 0, 0] = startChunk;
-            chunkCache[chunkCache.GetLength(0) - 1,
-                chunkCache.GetLength(1) - 1,
-                chunkCache.GetLength(2) - 1] = endChunk;
-
-            Chunk<BlockVoxel> currentChunk;
-
-            for (int x = 0; x < areaScale.X; x++)
-            {
-                for (int y = 0; y < areaScale.Y; y++)
-                {
-                    for (int z = 0; z < areaScale.Z; z++)
-                    {
-                        Vector3I offset = new Vector3I(x, y, z);
-                        Vector3I cacheOffset =
-                            ((areaStart - startChunk.Offset) + offset) /
-                            chunkSideLength;
-
-                        if (chunkCache[cacheOffset.X, cacheOffset.Y,
-                            cacheOffset.Z] == null)
-                        {
-                            rootChunk.TraverseToChunk(areaStart + offset,
-                                true, out chunkCache[cacheOffset.X,
-                                cacheOffset.Y, cacheOffset.Z]);
-                        }
-
-                        currentChunk = chunkCache[cacheOffset.X,
-                                cacheOffset.Y, cacheOffset.Z];
-
-                        if (currentChunk.Availability !=
-                            ChunkAvailability.None)
-                        {
-                            currentChunk.Unlock();
-                            currentChunk.SetVoxel(areaStart + offset -
-                                currentChunk.Offset, voxel);
-                        }
-                    }
-                }
-            }
-        }
-
-        /*
-        //Previous implementation, with small worlds/selections it performs
-        //the same like the new, but it does perform significantly worse on
-        //larger selections (and probably larger worlds).
-        private void SetArea(Vector3I start, Vector3I end, BlockVoxel voxel)
-        {
-            GetAreaFromPoints(start, end, out Vector3I areaStart,
-                out Vector3I areaScale);
-            Vector3I areaEndPosition = areaStart + areaScale;
-
-            for (int x = areaStart.X; x < areaEndPosition.X; x++)
-            {
-                for (int y = areaStart.Y; y < areaEndPosition.Y; y++)
-                {
-                    for (int z = areaStart.Z; z < areaEndPosition.Z; z++)
-                    {
-                        if (rootChunk.TraverseToChunk(new Vector3I(x, y, z),
-                            true, out var targetChunk))
-                        {
-                            if (targetChunk.Availability !=
-                                ChunkAvailability.None)
-                            {
-                                targetChunk.Unlock();
-                                targetChunk.SetVoxel(new Vector3I(x, y, z) -
-                                    targetChunk.Offset, voxel);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        */
     }
 }

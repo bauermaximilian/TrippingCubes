@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<blockRegistry>
+	<settings>
+		<textureClippingSizePx>128</textureClippingSizePx>
+		<vertexPropertyDataFormat>ColorLight</vertexPropertyDataFormat>
+	</settings>
+	<meshes>
+		<mesh identifier="block">
+			<east>
+				<vertices format="x y z tx ty">
+					1 0 0 0 0  1 1 0 0 1  1 1 1 1 1  1 0 1 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</east>
+			<west>
+				<vertices format="x y z tx ty">
+					0 0 1 0 0  0 1 1 0 1  0 1 0 1 1  0 0 0 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</west>
+			<above>
+				<vertices format="x y z tx ty">
+					0 1 0 0 0  0 1 1 0 1  1 1 1 1 1  1 1 0 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</above>
+			<below>
+				<vertices format="x y z tx ty">
+					0 0 1 0 0  0 0 0 0 1  1 0 0 1 1  1 0 1 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</below>
+			<north>
+				<vertices format="x y z tx ty">
+					1 0 1 0 0  1 1 1 0 1  0 1 1 1 1  0 0 1 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</north>
+			<south>
+				<vertices format="x y z tx ty">
+					0 0 0 0 0  0 1 0 0 1  1 1 0 1 1  1 0 0 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</south>
+		</mesh>
+		<mesh identifier="liquid">
+			<east>
+				<vertices format="x y z tx ty">
+					1 0 0 0 0  1 0.8 0 0 1  1 0.8 1 1 1  1 0 1 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</east>
+			<west>
+				<vertices format="x y z tx ty">
+					0 0 1 0 0  0 0.8 1 0 1  0 0.8 0 1 1  0 0 0 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</west>
+			<above>
+				<vertices format="x y z tx ty">
+					0 0.8 0 0 0  0 0.8 1 0 1  1 0.8 1 1 1  1 0.8 0 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</above>
+			<below>
+				<vertices format="x y z tx ty">
+					0 0 1 0 0  0 0 0 0 1  1 0 0 1 1  1 0 1 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</below>
+			<north>
+				<vertices format="x y z tx ty">
+					1 0 1 0 0  1 0.8 1 0 1  0 0.8 1 1 1  0 0 1 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</north>
+			<south>
+				<vertices format="x y z tx ty">
+					0 0 0 0 0  0 0.8 0 0 1  1 0.8 0 1 1  1 0 0 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3
+				</faces>
+			</south>
+		</mesh>
+		<mesh identifier="plant">
+			<base>
+				<vertices format="x y z tx ty">
+					0 0 0 0 0  0 1 0 0 1  1 1 1 1 1  1 0 1 1 0
+					0 0 1 0 0  0 1 1 0 1  1 1 0 1 1  1 0 0 1 0
+				</vertices>
+				<faces>
+					0 1 2  0 2 3  2 1 0  3 2 0  4 5 6  4 6 7  6 5 4  7 6 4
+				</faces>
+			</base>
+		</mesh>
+		<mesh identifier="bars">
+			<base>
+				<vertices format="x y z nx ny nz tx ty p1 p2 p3 p4">
+					0.0 0.8 0.5 0.0 1.0 -0.0 0.0 0.5 0 0 0 255
+					1.0 0.8 0.5 0.0 1.0 -0.0 0.0 1.0 0 0 0 255
+					0.0 0.7854 0.5354 0.0 0.7071 0.7071 0.875 0.5 0 0 0 255
+					1.0 0.7854 0.5354 -0.0 0.7071 0.7071 0.875 1.0 0 0 0 255
+					0.0 0.75 0.55 -0.0 -0.0 1.0 0.75 0.5 0 0 0 255
+					1.0 0.75 0.55 -0.0 0.0 1.0 0.75 1.0 0 0 0 255
+					0.0 0.7146 0.5354 -0.0 -0.7071 0.7071 0.625 0.5 0 0 0 255
+					1.0 0.7146 0.5354 -0.0 -0.7071 0.7071 0.625 1.0 0 0 0 255
+					0.0 0.7 0.5 -0.0 -1.0 -0.0 0.5 0.5 0 0 0 255
+					1.0 0.7 0.5 -0.0 -1.0 -0.0 0.5 1.0 0 0 0 255
+					0.0 0.7146 0.4646 -0.0 -0.7071 -0.7071 0.375 0.5 0 0 0 255
+					1.0 0.7146 0.4646 0.0 -0.7071 -0.7071 0.375 1.0 0 0 0 255
+					0.0 0.75 0.45 0.0 0.0 -1.0 0.25 0.5 0 0 0 255
+					1.0 0.75 0.45 0.0 -0.0 -1.0 0.25 1.0 0 0 0 255
+					0.0 0.7854 0.4646 0.0 0.7071 -0.7071 0.125 0.5 0 0 0 255
+					1.0 0.7854 0.4646 0.0 0.7071 -0.7071 0.125 1.0 0 0 0 255
+					0.0 0.3 0.5 0.0 1.0 -0.0 0.0 0.5 0 0 0 255
+					1.0 0.3 0.5 0.0 1.0 -0.0 0.0 1.0 0 0 0 255
+					0.0 0.2854 0.5354 0.0 0.7071 0.7071 0.875 0.5 0 0 0 255
+					1.0 0.2854 0.5354 -0.0 0.7071 0.7071 0.875 1.0 0 0 0 255
+					0.0 0.25 0.55 -0.0 0.0 1.0 0.75 0.5 0 0 0 255
+					1.0 0.25 0.55 -0.0 0.0 1.0 0.75 1.0 0 0 0 255
+					0.0 0.2146 0.5354 -0.0 -0.7071 0.7071 0.625 0.5 0 0 0 255
+					1.0 0.2146 0.5354 -0.0 -0.7071 0.7071 0.625 1.0 0 0 0 255
+					0.0 0.2 0.5 -0.0 -1.0 -0.0 0.5 0.5 0 0 0 255
+					1.0 0.2 0.5 0.0 -1.0 -0.0 0.5 1.0 0 0 0 255
+					0.0 0.2146 0.4646 0.0 -0.7071 -0.7071 0.375 0.5 0 0 0 255
+					1.0 0.2146 0.4646 0.0 -0.7071 -0.7071 0.375 1.0 0 0 0 255
+					0.0 0.25 0.45 0.0 0.0 -1.0 0.25 0.5 0 0 0 255
+					1.0 0.25 0.45 0.0 0.0 -1.0 0.25 1.0 0 0 0 255
+					0.0 0.2854 0.4646 0.0 0.7071 -0.7071 0.125 0.5 0 0 0 255
+					1.0 0.2854 0.4646 0.0 0.7071 -0.7071 0.125 1.0 0 0 0 255
+				</vertices>
+				<faces>
+					1 0 2
+					3 2 4
+					5 4 6
+					7 6 8
+					9 8 10
+					11 10 12
+					13 12 14
+					15 14 0
+					17 16 18
+					19 18 20
+					21 20 22
+					23 22 24
+					25 24 26
+					27 26 28
+					29 28 30
+					31 30 16
+					1 2 3
+					3 4 5
+					5 6 7
+					7 8 9
+					9 10 11
+					11 12 13
+					13 14 15
+					15 0 1
+					17 18 19
+					19 20 21
+					21 22 23
+					23 24 25
+					25 26 27
+					27 28 29
+					29 30 31
+					31 16 17
+				</faces>
+			</base>
+		</mesh>
+		<mesh identifier="bars-rotated">
+			<base>
+				<vertices format="x y z nx ny nz tx ty p1 p2 p3 p4">
+					0.5 0.8 -0.0 0.0 1.0 -0.0 0.00011 0.38293 0 0 0 255
+					0.5 0.8 1.0 0.0 1.0 -0.0 0.99989 0.38293 0 0 0 255
+					0.4646 0.7854 0.0 -0.7071 0.7071 -0.0 0.00011 0.42119 0 0 0 255
+					0.4646 0.7854 1.0 -0.7071 0.7071 -0.0 0.99989 0.42119 0 0 0 255
+					0.45 0.75 0.0 -1.0 -0.0 -0.0 0.00011 0.45945 0 0 0 255
+					0.45 0.75 1.0 -1.0 0.0 -0.0 0.99989 0.45945 0 0 0 255
+					0.4646 0.7146 0.0 -0.7071 -0.7071 -0.0 0.00011 0.49771 0 0 0 255
+					0.4646 0.7146 1.0 -0.7071 -0.7071 -0.0 0.99989 0.49771 0 0 0 255
+					0.5 0.7 -0.0 0.0 -1.0 -0.0 0.00011 0.53597 0 0 0 255
+					0.5 0.7 1.0 0.0 -1.0 -0.0 0.99989 0.53597 0 0 0 255
+					0.5354 0.7146 -0.0 0.7071 -0.7071 0.0 0.00011 0.57423 0 0 0 255
+					0.5354 0.7146 1.0 0.7071 -0.7071 0.0 0.99989 0.57423 0 0 0 255
+					0.55 0.75 -0.0 1.0 0.0 0.0 0.00011 0.61249 0 0 0 255
+					0.55 0.75 1.0 1.0 -0.0 0.0 0.99989 0.30641 0 0 0 255
+					0.5354 0.7854 -0.0 0.7071 0.7071 0.0 0.00011 0.34467 0 0 0 255
+					0.5354 0.7854 1.0 0.7071 0.7071 0.0 0.99989 0.34467 0 0 0 255
+					0.5 0.3 -0.0 0.0 1.0 0.0 0.99989 0.22967 0 0 0 255
+					0.5 0.3 1.0 0.0 1.0 0.0 0.00011 0.22967 0 0 0 255
+					0.4646 0.2854 0.0 -0.7071 0.7071 -0.0 0.99989 0.19141 0 0 0 255
+					0.4646 0.2854 1.0 -0.7071 0.7071 -0.0 0.00011 0.19141 0 0 0 255
+					0.45 0.25 0.0 -1.0 0.0 -0.0 0.99989 0.15315 0 0 0 255
+					0.45 0.25 1.0 -1.0 -0.0 -0.0 0.00011 0.15315 0 0 0 255
+					0.4646 0.2146 0.0 -0.7071 -0.7071 -0.0 0.99989 0.11489 0 0 0 255
+					0.4646 0.2146 1.0 -0.7071 -0.7071 -0.0 0.00011 0.11489 0 0 0 255
+					0.5 0.2 -0.0 0.0 -1.0 -0.0 0.99989 0.07663 0 0 0 255
+					0.5 0.2 1.0 0.0 -1.0 0.0 0.00011 0.07663 0 0 0 255
+					0.5354 0.2146 -0.0 0.7071 -0.7071 0.0 0.99989 0.03837 0 0 0 255
+					0.5354 0.2146 1.0 0.7071 -0.7071 0.0 0.00011 0.03837 0 0 0 255
+					0.55 0.25 -0.0 1.0 0.0 0.0 0.99989 0.00011 0 0 0 255
+					0.55 0.25 1.0 1.0 -0.0 0.0 0.00011 0.30619 0 0 0 255
+					0.5354 0.2854 -0.0 0.7071 0.7071 0.0 0.99989 0.26793 0 0 0 255
+					0.5354 0.2854 1.0 0.7071 0.7071 0.0 0.00011 0.26793 0 0 0 255
+				</vertices>
+				<faces>
+					1 0 2
+					3 2 4
+					5 4 6
+					7 6 8
+					9 8 10
+					11 10 12
+					13 12 14
+					15 14 0
+					17 16 18
+					19 18 20
+					21 20 22
+					23 22 24
+					24 26 27
+					27 26 28
+					29 28 30
+					31 30 16
+					1 2 3
+					3 4 5
+					5 6 7
+					7 8 9
+					9 10 11
+					11 12 13
+					13 14 15
+					15 0 1
+					17 18 19
+					19 20 21
+					21 22 23
+					23 24 25
+					24 27 25
+					27 28 29
+					29 30 31
+					31 16 17
+				</faces>
+			</base>
+		</mesh>
+	</meshes>
+	<blocks>
+		<block key="0" identifier="air">
+			<properties>
+				<isTranslucent>true</isTranslucent>
+				<type>None</type>
+			</properties>
+		</block>
+		<block key="1" identifier="cubiclines.yellow">
+			<mesh reference="block"/>
+			<texture>
+				<base>cubic-lines_yellow_alt-1.png</base>
+			</texture>
+		</block>
+		<block key="1:1" identifier="cubiclines.purple">
+			<mesh reference="block"/>
+			<texture>
+				<base>cubic-lines_purple.png</base>
+			</texture>
+		</block>
+		<block key="1:2" identifier="cubiclines.yellow.double">
+			<mesh reference="block"/>
+			<texture>
+				<base>cubic-lines_yellow_double.png</base>
+			</texture>
+		</block>
+		<block key="1:3" identifier="cubiclines.purple.double">
+			<mesh reference="block"/>
+			<texture>
+				<base>cubic-lines_purple_double.png</base>
+			</texture>
+		</block>
+		<block key="1:4" identifier="cubiclines.purple.transparent">
+			<mesh reference="block"/>
+			<properties>
+				<isTranslucent>false</isTranslucent>
+			</properties>
+			<texture>
+				<base>cubic-lines_purple-transparent.png</base>
+			</texture>
+		</block>
+		<block key="2" identifier="gradients.green.single">
+			<mesh reference="block"/>
+			<texture>
+				<base>gradients_green_wall.png</base>
+				<above>gradients_green_floor-lit.png</above>
+				<below>gradients_green_floor-lit.png</below>
+			</texture>
+		</block>
+		<block key="2:1" identifier="gradients.green.single.unlit">
+			<mesh reference="block"/>
+			<texture>
+				<base>gradients_green_wall.png</base>
+				<above>gradients_green_floor-unlit.png</above>
+				<below>gradients_green_floor-unlit.png</below>
+			</texture>
+		</block>
+		<block key="2:2" identifier="gradients.green.double-bottom">
+			<mesh reference="block"/>
+			<texture>
+				<base>gradients_green_wall-bottom.png</base>
+				<above>gradients_green_floor-lit.png</above>
+				<below>gradients_green_floor-lit.png</below>
+			</texture>
+		</block>
+		<block key="2:3" identifier="gradients.green.double-top">
+			<mesh reference="block"/>
+			<texture>
+				<base>gradients_green_wall-top.png</base>
+				<above>gradients_green_floor-unlit.png</above>
+				<below>gradients_green_floor-unlit.png</below>
+			</texture>
+		</block>
+		<block key="3" identifier="gradients.green.flipped.single">
+			<mesh reference="block"/>
+			<texture>
+				<base>gradients_green_wall-flipped.png</base>
+				<below>gradients_green_floor-lit.png</below>
+				<above>gradients_green_floor-lit.png</above>
+			</texture>
+		</block>
+		<block key="4" identifier="cubicstrict.purple">
+			<mesh reference="block"/>
+			<texture>
+				<base>cubic-strict_purple.png</base>
+			</texture>
+		</block>
+		<block key="4:1" identifier="cubicstrict.purple.dim">
+			<mesh reference="block"/>
+			<texture>
+				<base>cubic-strict_purple-dim.png</base>
+			</texture>
+		</block>
+		<block key="4:2" identifier="cubicstrict.pink">
+			<mesh reference="block"/>
+			<texture>
+				<base>cubic-strict_pink.png</base>
+			</texture>
+		</block>
+		<block key="4:3" identifier="cubicstrict.pink.dim">
+			<mesh reference="block"/>
+			<texture>
+				<base>cubic-strict_pink-dim.png</base>
+			</texture>
+		</block>
+		<block key="5" identifier="pixelbrick.red">
+			<mesh reference="block"/>
+			<texture>
+				<base>pixelbrick_red.png</base>
+			</texture>
+		</block>
+		<block key="5:1" identifier="pixelbrick.pink">
+			<mesh reference="block"/>
+			<texture>
+				<base>pixelbrick_pink.png</base>
+			</texture>
+		</block>
+		<block key="5:2" identifier="pixelbrick.purple">
+			<mesh reference="block"/>
+			<texture>
+				<base>pixelbrick_purple.png</base>
+			</texture>
+		</block>
+		<block key="5:4" identifier="pixelbrick.blue.fade">
+			<mesh reference="block"/>
+			<texture>
+				<base>pixelbrick_blue.png</base>
+			</texture>
+		</block>
+		<block key="6" identifier="lasers.horizontal">
+			<properties>
+				<isTranslucent>true</isTranslucent>
+			</properties>
+			<mesh reference="bars"/>
+			<texture>
+				<base>laser.png</base>
+			</texture>
+		</block>
+		<block key="6:1" identifier="lasers.horizontal.rotated">
+			<properties>
+				<isTranslucent>true</isTranslucent>
+			</properties>
+			<mesh reference="bars-rotated"/>
+			<texture>
+				<base>laser.png</base>
+			</texture>
+		</block>
+	</blocks>
+</blockRegistry>
