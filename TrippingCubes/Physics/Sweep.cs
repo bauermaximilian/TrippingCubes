@@ -15,6 +15,10 @@
  * 
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * The following code is based on "voxel-aabb-sweep" 
+ * by Andy Hall (https://github.com/andyhall), used under the
+ * conditions of the MIT license. See ABOUT.txt for the complete license info.
  */
 
 using System;
