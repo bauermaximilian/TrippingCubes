@@ -199,15 +199,6 @@ namespace TrippingCubes
                         IEntity entity = entityConfiguration.Instantiate(this,
                             instantiation.InstanceParameters);
                         entities.Add(entity);
-
-                        if (entity is ICharacter characterEntity &&
-                            !string.IsNullOrWhiteSpace(characterEntity.Name))
-                        {
-                            CharacterLogger logger = 
-                                CharacterLogger.Create(characterEntity);
-                            Game.Protocol.CharacterProtocols.Add(
-                                logger.Protocol);
-                        }
                     }
                     catch (Exception exc)
                     {

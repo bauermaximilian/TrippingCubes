@@ -10,7 +10,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\ShamanTK\ShamanTK\ShamanTK.csproj" />
-    <ProjectReference Include="..\..\TrippingAnalytics\TrippingAnalytics.Core\TrippingAnalytics.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

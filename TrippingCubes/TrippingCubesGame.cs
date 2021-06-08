@@ -27,12 +27,9 @@ using System;
 using System.Numerics;
 using TrippingCubes.World;
 using System.Collections.Generic;
-using static ShamanTK.Graphics.RenderParameters;
 using System.Threading;
 using System.Globalization;
 using System.Threading.Tasks;
-using TrippingAnalytics.Core.Networking;
-using TrippingAnalytics.Core.Common;
 
 namespace TrippingCubes
 {
@@ -74,13 +71,6 @@ namespace TrippingCubes
 
         internal ModelCache Models { get; private set; }
 
-        internal SessionProtocol Protocol { get; } = new SessionProtocol
-        {
-            Time = DateTime.Now,
-            CharacterProtocols = new List<CharacterProtocol>(),
-            ProgramLog = new List<ProgramLogItem>()
-        };
-
         internal bool ReachedGoal { get; private set; } = false;
 
         internal bool CreatorMode { get; }
@@ -88,19 +78,7 @@ namespace TrippingCubes
         private readonly FileSystemPath worldConfigurationPath =
             "/Worlds/Default.xml";
 
-#if DEBUG
-        private const string ApiUrl = "http://127.0.0.1:5000/api/analytics";
-#else
-        private const string ApiUrl = ApiClient.DefaultApiUrl;
-#endif
-
-        private const string FirstTestWorldConfigurationPath =
-            "/Worlds/First.xml";
-        private const string SecondTestWorldConfigurationPath =
-            "/Worlds/Second.xml";
-
         private const string FlagConfiguration = "configuration:";
-        private const string FlagAnalytics = "analytics:";
         private const string FlagCreatorMode = "creator";
 
         private const int ReturnCodeSuccess = 0;
@@ -111,15 +89,13 @@ namespace TrippingCubes
 
         public AnimatedColor OverlayColor { get; } = new AnimatedColor();
 
-        public static async Task<int> Main(string[] args)
+        public static int Main(string[] args)
         {
             Log.UseEnglishExceptionMessages = true;
             bool consoleAvailable = TryAddConsoleLogOutput();
 
             bool creatorMode = false;
             string configurationPath = null;
-            string analyticsToken = null;
-            int analyticsSessionId = -1;
 
             foreach (string argument in args)
             {
@@ -130,29 +106,6 @@ namespace TrippingCubes
                 else if (arg.Equals(FlagCreatorMode,
                     StringComparison.InvariantCultureIgnoreCase))
                     creatorMode = true;
-                else if (arg.StartsWith(FlagAnalytics) &&
-                    analyticsToken == null)
-                {
-                    analyticsToken = arg.Replace(FlagAnalytics, "");
-
-                    try
-                    {
-                        analyticsSessionId = await GetAnalyticsSessionIdAsync(
-                            analyticsToken);
-                    }
-                    catch (Exception exc)
-                    {
-                        if (exc.InnerException is InvalidOperationException)
-                            return ReturnCodeTokenError;
-                        else return ReturnCodeApiErrorBeginning;
-                    }
-
-                    if (analyticsSessionId == 0)
-                        configurationPath = FirstTestWorldConfigurationPath;
-                    else if (analyticsSessionId == 1)
-                        configurationPath = SecondTestWorldConfigurationPath;
-                    else return ReturnCodeTokenError;
-                }
             }
 
             TrippingCubesGame game = new TrippingCubesGame(configurationPath,
@@ -161,25 +114,8 @@ namespace TrippingCubes
             DateTime startGameTime = DateTime.Now;
             game.Run(new ShamanTK.Platforms.DesktopGL.PlatformProvider(),
                 FileSystem.ProgramDataWritable);
-            if ((DateTime.Now - startGameTime) < TimeSpan.FromSeconds(10))
+            if ((DateTime.Now - startGameTime) < TimeSpan.FromSeconds(6))
                 return ReturnCodeGameEndedTooSoon;
-
-            try
-            {
-                if (analyticsToken != null && analyticsSessionId >= 0 &&
-                    game.ReachedGoal)
-                {
-                    Log.Trace("Sending analytics data...");
-                    ApiClient api = new ApiClient(ApiUrl);
-                    await api.PostSessionProtocol(analyticsToken,
-                        game.Protocol, analyticsSessionId);
-                    Log.Trace("Analytics data sent.");
-                }
-            }
-            catch
-            {
-                return ReturnCodeApiErrorEnd;
-            }
 
             if (consoleAvailable)
             {
@@ -188,29 +124,6 @@ namespace TrippingCubes
             }
 
             return ReturnCodeSuccess;
-        }
-
-        private static async Task<int> GetAnalyticsSessionIdAsync(
-            string token)
-        {
-            ApiClient api = new ApiClient(ApiUrl);
-            AnalyticsUserStatusDetails status;
-            try
-            {
-                status = await api.GetStatus(token);
-                if (!status.HasFirstProtocol)
-                    return 0;
-                else if (!status.HasSecondProtocol)
-                    return 1;
-                else throw new InvalidOperationException("The token has " +
-                    "already been used successfully for both playtests and " +
-                    "can't be used again.");
-            }
-            catch (Exception exc)
-            {
-                throw new Exception("The ID for the playtest session " +
-                    "couldn't be retrieved.", exc);
-            }
         }
 
         private static bool TryAddConsoleLogOutput()
@@ -231,14 +144,7 @@ namespace TrippingCubes
         public TrippingCubesGame(string worldConfigurationPath, 
             bool creatorMode)
         {
-            this.CreatorMode = creatorMode;
-
-            Log.MessageLogged += (s, e) =>
-                Protocol.ProgramLog.Add(new ProgramLogItem
-                {
-                    Time = e.Time,
-                    Message = e.ToString()
-                });
+            CreatorMode = creatorMode;
 
             if (creatorMode) Log.Trace("Creator mode enabled.");
 
